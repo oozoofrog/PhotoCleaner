@@ -400,6 +400,8 @@
 				DEVELOPMENT_TEAM = HY47J4787Q;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "PhotoCleaner가 수정된 사진을 저장하려면 권한이 필요합니다.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "PhotoCleaner가 사진첩의 문제를 찾고 정리하려면 사진 접근 권한이 필요합니다. 사진은 기기에서만 분석되며 외부로 전송되지 않습니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -432,6 +434,8 @@
 				DEVELOPMENT_TEAM = HY47J4787Q;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "PhotoCleaner가 수정된 사진을 저장하려면 권한이 필요합니다.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "PhotoCleaner가 사진첩의 문제를 찾고 정리하려면 사진 접근 권한이 필요합니다. 사진은 기기에서만 분석되며 외부로 전송되지 않습니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

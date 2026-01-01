@@ -1,0 +1,332 @@
+//
+//  DashboardView.swift
+//  PhotoCleaner
+//
+//  메인 대시보드 화면
+//
+
+import SwiftUI
+
+struct DashboardView: View {
+    @Bindable var viewModel: DashboardViewModel
+    @State private var selectedIssueType: IssueType?
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                switch viewModel.appState {
+                case .needsPermission:
+                    PermissionRequestView(viewModel: viewModel)
+
+                case .ready:
+                    dashboardContent
+
+                case .scanning:
+                    ScanningView(progress: viewModel.scanProgress)
+
+                case .error(let message):
+                    ErrorView(message: message) {
+                        viewModel.updateAppState()
+                    }
+                }
+            }
+            .navigationTitle("PhotoCleaner")
+            .navigationDestination(item: $selectedIssueType) { issueType in
+                IssueListView(
+                    issueType: issueType,
+                    issues: viewModel.issues(for: issueType)
+                )
+            }
+        }
+    }
+
+    // MARK: - Dashboard Content
+
+    @ViewBuilder
+    private var dashboardContent: some View {
+        ScrollView {
+            VStack(spacing: Spacing.lg) {
+                // 전체 요약 카드
+                SummaryCard(
+                    totalPhotos: viewModel.totalPhotoCount,
+                    totalIssues: viewModel.totalIssueCount,
+                    lastScanDate: viewModel.formattedLastScanDate,
+                    isScanning: viewModel.isScanning
+                ) {
+                    Task { await viewModel.startScan() }
+                }
+
+                // 문제 유형별 카드 그리드
+                if viewModel.hasScanned {
+                    issueCardsSection
+                }
+            }
+            .padding(Spacing.md)
+        }
+        .background(AppColor.backgroundGrouped)
+        .refreshable {
+            await viewModel.startScan()
+        }
+    }
+
+    // MARK: - Issue Cards Section
+
+    @ViewBuilder
+    private var issueCardsSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            Text("문제 유형")
+                .font(Typography.headline)
+                .foregroundStyle(AppColor.textPrimary)
+
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: Spacing.md),
+                    GridItem(.flexible(), spacing: Spacing.md)
+                ],
+                spacing: Spacing.md
+            ) {
+                ForEach(viewModel.displayIssueTypes) { issueType in
+                    IssueCard(
+                        issueType: issueType,
+                        count: viewModel.summary(for: issueType)?.count ?? 0
+                    ) {
+                        selectedIssueType = issueType
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Summary Card
+
+struct SummaryCard: View {
+    let totalPhotos: Int
+    let totalIssues: Int
+    let lastScanDate: String?
+    let isScanning: Bool
+    let onScan: () -> Void
+
+    var body: some View {
+        VStack(spacing: Spacing.md) {
+            // 상단 정보
+            HStack {
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    Text("전체 요약")
+                        .font(Typography.caption)
+                        .foregroundStyle(AppColor.textSecondary)
+
+                    if totalPhotos > 0 {
+                        Text("\(totalPhotos.formatted())장 중 \(totalIssues)장에 문제 발견")
+                            .font(Typography.headline)
+                            .foregroundStyle(AppColor.textPrimary)
+                    } else {
+                        Text("검사를 시작해 주세요")
+                            .font(Typography.headline)
+                            .foregroundStyle(AppColor.textPrimary)
+                    }
+
+                    if let lastScan = lastScanDate {
+                        Text("마지막 검사: \(lastScan)")
+                            .font(Typography.caption)
+                            .foregroundStyle(AppColor.textTertiary)
+                    }
+                }
+
+                Spacer()
+
+                // 문제 개수 배지
+                if totalIssues > 0 {
+                    Text("\(totalIssues)")
+                        .font(Typography.largeNumber)
+                        .foregroundStyle(AppColor.warning)
+                }
+            }
+
+            // 검사 버튼
+            Button(action: onScan) {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                    Text(totalPhotos > 0 ? "다시 검사하기" : "검사 시작하기")
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.primary)
+            .disabled(isScanning)
+        }
+        .padding(Spacing.lg)
+        .background(AppColor.backgroundSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.lg))
+    }
+}
+
+// MARK: - Issue Card
+
+struct IssueCard: View {
+    let issueType: IssueType
+    let count: Int
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                // 아이콘과 개수
+                HStack {
+                    Image(systemName: issueType.iconName)
+                        .font(.system(size: IconSize.lg))
+                        .foregroundStyle(issueType.color)
+
+                    Spacer()
+
+                    if count > 0 {
+                        Text("\(count)")
+                            .font(Typography.mediumNumber)
+                            .foregroundStyle(issueType.color)
+                    }
+                }
+
+                // 이름
+                Text(issueType.displayName)
+                    .font(Typography.subheadline)
+                    .foregroundStyle(AppColor.textPrimary)
+
+                // 상태
+                Text(count > 0 ? "\(count)장 발견" : "문제 없음")
+                    .font(Typography.caption)
+                    .foregroundStyle(AppColor.textSecondary)
+            }
+            .padding(Spacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(AppColor.backgroundSecondary)
+            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Permission Request View
+
+struct PermissionRequestView: View {
+    @Bindable var viewModel: DashboardViewModel
+
+    var body: some View {
+        VStack(spacing: Spacing.xl) {
+            Spacer()
+
+            // 아이콘
+            Image(systemName: "photo.on.rectangle.angled")
+                .font(.system(size: IconSize.hero))
+                .foregroundStyle(AppColor.primary)
+
+            // 제목
+            Text("사진 접근 권한이 필요해요")
+                .font(Typography.title)
+                .foregroundStyle(AppColor.textPrimary)
+
+            // 설명
+            VStack(spacing: Spacing.sm) {
+                Text("PhotoCleaner가 사진첩의 문제를")
+                Text("찾고 정리하려면 사진 접근 권한이 필요합니다.")
+            }
+            .font(Typography.body)
+            .foregroundStyle(AppColor.textSecondary)
+            .multilineTextAlignment(.center)
+
+            // 안내 사항
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                Label("사진은 기기에서만 분석됩니다", systemImage: "lock.shield")
+                Label("외부로 전송되지 않습니다", systemImage: "icloud.slash")
+            }
+            .font(Typography.caption)
+            .foregroundStyle(AppColor.textTertiary)
+            .padding(Spacing.md)
+            .background(AppColor.backgroundSecondary)
+            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md))
+
+            Spacer()
+
+            // 버튼
+            VStack(spacing: Spacing.sm) {
+                if viewModel.permissionService.status == .denied {
+                    Button("설정에서 허용하기") {
+                        viewModel.permissionService.openSettings()
+                    }
+                    .buttonStyle(.primary)
+                } else {
+                    Button("권한 허용하기") {
+                        Task { await viewModel.requestPermission() }
+                    }
+                    .buttonStyle(.primary)
+                }
+            }
+            .padding(.horizontal, Spacing.lg)
+        }
+        .padding(Spacing.lg)
+    }
+}
+
+// MARK: - Scanning View
+
+struct ScanningView: View {
+    let progress: ScanProgress?
+
+    var body: some View {
+        VStack(spacing: Spacing.xl) {
+            Spacer()
+
+            ProgressView()
+                .scaleEffect(1.5)
+
+            Text(progress?.displayText ?? "검사 중...")
+                .font(Typography.headline)
+                .foregroundStyle(AppColor.textPrimary)
+
+            if let progress = progress, progress.total > 0 {
+                ProgressView(value: progress.progress)
+                    .progressViewStyle(.linear)
+                    .padding(.horizontal, Spacing.xxl)
+            }
+
+            Spacer()
+        }
+    }
+}
+
+// MARK: - Error View
+
+struct ErrorView: View {
+    let message: String
+    let onRetry: () -> Void
+
+    var body: some View {
+        VStack(spacing: Spacing.lg) {
+            Spacer()
+
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: IconSize.hero))
+                .foregroundStyle(AppColor.warning)
+
+            Text("오류가 발생했어요")
+                .font(Typography.title)
+                .foregroundStyle(AppColor.textPrimary)
+
+            Text(message)
+                .font(Typography.body)
+                .foregroundStyle(AppColor.textSecondary)
+                .multilineTextAlignment(.center)
+
+            Spacer()
+
+            Button("다시 시도", action: onRetry)
+                .buttonStyle(.primary)
+                .padding(.horizontal, Spacing.lg)
+        }
+        .padding(Spacing.lg)
+    }
+}
+
+// MARK: - Preview
+
+#Preview("Dashboard - Ready") {
+    DashboardView(viewModel: DashboardViewModel())
+}

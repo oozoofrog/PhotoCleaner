@@ -18,12 +18,12 @@
     "phase": "planning",
     "activeFeature": null,
     "lastSession": {
-      "date": "2026-01-01",
-      "summary": "프로젝트 초기 설정 - Xcode 프로젝트 생성, .gitignore 추가, project.json 생성",
+      "date": "2026-01-02",
+      "summary": "기능 기획 완료 - 대시보드형 메인 화면, 4가지 문제 유형 감지, 중복 사진 감지(완전동일+유사) 결정",
       "nextSteps": [
-        "Photos 권한 요청 구현",
-        "사진첩 접근 및 목록 표시 기능 구현",
-        "문제 사진 감지 로직 설계"
+        "Phase 1 구현 시작: 사진 권한 요청",
+        "대시보드 UI 구현",
+        "iCloud 다운로드 실패 감지"
       ]
     },
     "blockers": []
@@ -156,6 +156,102 @@
         }
       ],
       "notes": "PHPhotoLibrary.shared().performChanges 사용"
+    },
+    {
+      "id": "feature-005",
+      "name": "스크린샷 정리",
+      "description": "스크린샷만 모아서 일괄 관리 및 삭제",
+      "status": "planned",
+      "priority": "high",
+      "dependencies": ["feature-001"],
+      "tasks": [
+        {
+          "id": "task-013",
+          "description": "스크린샷 감지 (mediaSubtypes.screenshot)",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        },
+        {
+          "id": "task-014",
+          "description": "날짜별 그룹핑 UI",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        },
+        {
+          "id": "task-015",
+          "description": "스마트 필터 (오늘/이번주/오래된것)",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        }
+      ],
+      "notes": "Phase 1 MVP 기능"
+    },
+    {
+      "id": "feature-006",
+      "name": "대용량 파일 감지",
+      "description": "설정된 크기 이상의 파일 감지 및 관리",
+      "status": "planned",
+      "priority": "medium",
+      "dependencies": ["feature-001"],
+      "tasks": [
+        {
+          "id": "task-016",
+          "description": "파일 크기 기준 설정 UI",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        },
+        {
+          "id": "task-017",
+          "description": "대용량 파일 스캔 로직",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        },
+        {
+          "id": "task-018",
+          "description": "크기순 정렬 목록 UI",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        }
+      ],
+      "notes": "기본값 10MB, 사용자 설정 가능"
+    },
+    {
+      "id": "feature-007",
+      "name": "대시보드 메인 화면",
+      "description": "문제 유형별 요약 카드를 보여주는 대시보드 UI",
+      "status": "planned",
+      "priority": "high",
+      "dependencies": ["feature-001"],
+      "tasks": [
+        {
+          "id": "task-019",
+          "description": "전체 요약 카드 UI",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        },
+        {
+          "id": "task-020",
+          "description": "문제 유형별 카드 그리드",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        },
+        {
+          "id": "task-021",
+          "description": "중복 사진 요약 카드",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        }
+      ],
+      "notes": "Phase 1 MVP 기능"
     }
   ],
   "issues": [],
@@ -250,6 +346,18 @@
         "DESIGN_VOCABULARY.md 생성 - 디자인 공통 언어",
         "DesignTokens.swift 생성 - 색상, 크기, 폰트 토큰 시스템"
       ]
+    },
+    {
+      "date": "2026-01-02",
+      "version": "0.0.2",
+      "changes": [
+        "FEATURE_SPEC.md 생성 - 전체 기능 명세서",
+        "대시보드형 메인 화면 기획",
+        "4가지 문제 유형 정의 (iCloud실패, 손상, 스크린샷, 대용량)",
+        "중복 사진 감지 모드 결정 (완전동일 + 유사사진)",
+        "iOS 26+ 타겟 결정",
+        "3단계 구현 로드맵 수립 (MVP → 확장 → 고급)"
+      ]
     }
   ],
   "references": [
@@ -282,6 +390,11 @@
       "title": "Design Tokens",
       "url": "PhotoCleaner/Sources/DesignSystem/DesignTokens.swift",
       "description": "SwiftUI 디자인 토큰 - 색상, 간격, 타이포그래피, 버튼 스타일"
+    },
+    {
+      "title": "Feature Specification",
+      "url": "FEATURE_SPEC.md",
+      "description": "전체 기능 명세서 - 화면 구조, 기능 상세, 데이터 모델, 구현 로드맵"
     }
   ]
 }

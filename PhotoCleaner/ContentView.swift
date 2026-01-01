@@ -8,14 +8,10 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var viewModel = DashboardViewModel()
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
+        DashboardView(viewModel: viewModel)
     }
 }
 
