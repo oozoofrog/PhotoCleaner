@@ -85,7 +85,10 @@ struct IssueListView: View {
         ScrollView {
             LazyVGrid(
                 columns: [
-                    GridItem(.adaptive(minimum: 100, maximum: 150), spacing: Spacing.xs)
+                    GridItem(
+                        .adaptive(minimum: GridLayout.minItemWidth, maximum: GridLayout.maxItemWidth),
+                        spacing: Spacing.xs
+                    )
                 ],
                 spacing: Spacing.xs
             ) {
@@ -137,6 +140,9 @@ struct IssueListView: View {
         .background(.ultraThinMaterial)
     }
 
+    @State private var isDeleting = false
+    @State private var deleteError: String?
+
     // MARK: - Actions
 
     private func toggleSelection(_ id: String) {
@@ -147,26 +153,42 @@ struct IssueListView: View {
         }
     }
 
+    /// 선택된 사진 삭제 (비동기, 백그라운드 처리)
     private func deleteSelectedPhotos() {
+        guard !isDeleting else { return }
+
+        Task {
+            await performDeletion()
+        }
+    }
+
+    private func performDeletion() async {
+        isDeleting = true
+        deleteError = nil
+
         let identifiersToDelete = issues
             .filter { selectedIssues.contains($0.id) }
             .map(\.assetIdentifier)
 
-        let assetsToDelete = PHAsset.fetchAssets(
-            withLocalIdentifiers: identifiersToDelete,
-            options: nil
-        )
+        // 백그라운드에서 fetch 수행
+        let assetsToDelete = await Task.detached {
+            PHAsset.fetchAssets(
+                withLocalIdentifiers: identifiersToDelete,
+                options: nil
+            )
+        }.value
 
-        PHPhotoLibrary.shared().performChanges {
-            PHAssetChangeRequest.deleteAssets(assetsToDelete)
-        } completionHandler: { success, error in
-            Task { @MainActor in
-                if success {
-                    selectedIssues.removeAll()
-                    isSelectionMode = false
-                }
+        do {
+            try await PHPhotoLibrary.shared().performChanges {
+                PHAssetChangeRequest.deleteAssets(assetsToDelete)
             }
+            selectedIssues.removeAll()
+            isSelectionMode = false
+        } catch {
+            deleteError = error.localizedDescription
         }
+
+        isDeleting = false
     }
 }
 
@@ -237,30 +259,61 @@ struct PhotoThumbnailView: View {
         }
     }
 
+    /// 썸네일 로드 (안전한 continuation 사용)
     private func loadThumbnail() async {
         guard let asset = PHAsset.asset(withIdentifier: issue.assetIdentifier) else { return }
 
         let options = PHImageRequestOptions()
-        options.deliveryMode = .opportunistic
+        options.deliveryMode = .highQualityFormat  // 단일 콜백 보장
         options.isNetworkAccessAllowed = false
         options.resizeMode = .fast
+        options.isSynchronous = false
 
-        let size = CGSize(width: 200, height: 200)
+        let size = ThumbnailSize.grid
 
-        await withCheckedContinuation { continuation in
+        // 안전한 continuation 패턴 사용
+        let loadedImage: UIImage? = await withCheckedContinuation { continuation in
+            var hasResumed = false
+
             PHImageManager.default().requestImage(
                 for: asset,
                 targetSize: size,
                 contentMode: .aspectFill,
                 options: options
-            ) { image, _ in
-                Task { @MainActor in
-                    self.thumbnail = image
-                    continuation.resume()
+            ) { image, info in
+                // 이미 resume된 경우 무시
+                guard !hasResumed else { return }
+
+                // degraded 이미지가 아닌 경우에만 resume
+                let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
+                let isCancelled = (info?[PHImageCancelledKey] as? Bool) ?? false
+                let hasError = info?[PHImageErrorKey] != nil
+
+                // 최종 이미지이거나 에러/취소된 경우 resume
+                if !isDegraded || isCancelled || hasError {
+                    hasResumed = true
+                    continuation.resume(returning: image)
                 }
             }
         }
+
+        thumbnail = loadedImage
     }
+}
+
+// MARK: - Thumbnail Size Constants
+
+enum ThumbnailSize {
+    static let grid = CGSize(width: 200, height: 200)
+}
+
+// MARK: - Grid Layout Constants
+
+enum GridLayout {
+    /// 그리드 아이템 최소 너비
+    static let minItemWidth: CGFloat = 100
+    /// 그리드 아이템 최대 너비
+    static let maxItemWidth: CGFloat = 150
 }
 
 // MARK: - Preview

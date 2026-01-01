@@ -9,9 +9,11 @@ import SwiftUI
 
 @main
 struct PhotoCleanerApp: App {
+    @State private var viewModel = DashboardViewModel()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            DashboardView(viewModel: viewModel)
         }
     }
 }

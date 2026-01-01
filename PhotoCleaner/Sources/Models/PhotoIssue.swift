@@ -40,14 +40,14 @@ enum IssueType: String, CaseIterable, Identifiable {
         }
     }
 
-    /// 테마 색상
+    /// 테마 색상 (AppColor 토큰 사용)
     var color: Color {
         switch self {
-        case .downloadFailed: .orange
-        case .corrupted: .red
-        case .screenshot: .blue
-        case .largeFile: .purple
-        case .duplicate: .teal
+        case .downloadFailed: AppColor.warning
+        case .corrupted: AppColor.destructive
+        case .screenshot: AppColor.primary
+        case .largeFile: AppColor.secondary
+        case .duplicate: AppColor.primary
         }
     }
 
@@ -83,9 +83,9 @@ enum IssueSeverity: Int, Comparable {
 
     var color: Color {
         switch self {
-        case .info: .secondary
-        case .warning: .orange
-        case .critical: .red
+        case .info: AppColor.secondary
+        case .warning: AppColor.warning
+        case .critical: AppColor.destructive
         }
     }
 }

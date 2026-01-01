@@ -282,58 +282,6 @@ public enum AppColor {
     public static let fillTertiary = Color(.tertiarySystemFill)
 }
 
-// MARK: - Issue Type Colors
-
-/// 문제 유형별 색상 매핑
-public enum IssueColor {
-    /// 다운로드 필요 (주의)
-    public static let needsDownload = AppColor.warning
-
-    /// 다운로드 실패 (심각)
-    public static let downloadFailed = AppColor.destructive
-
-    /// 손상됨 (심각)
-    public static let corrupted = AppColor.destructive
-
-    /// 중복 (참고)
-    public static let duplicate = AppColor.primary
-
-    /// 저화질 (정보)
-    public static let lowQuality = AppColor.secondary
-
-    /// 스크린샷 (정보)
-    public static let screenshot = AppColor.secondary
-
-    /// 용량 큼 (정보)
-    public static let largeFile = AppColor.secondary
-}
-
-// MARK: - Issue Type Icons
-
-/// 문제 유형별 SF Symbol 아이콘
-public enum IssueIcon {
-    /// 다운로드 필요
-    public static let needsDownload = "icloud.and.arrow.down"
-
-    /// 다운로드 실패
-    public static let downloadFailed = "exclamationmark.icloud"
-
-    /// 손상됨
-    public static let corrupted = "exclamationmark.triangle"
-
-    /// 중복
-    public static let duplicate = "square.on.square"
-
-    /// 저화질
-    public static let lowQuality = "arrow.down.right.and.arrow.up.left"
-
-    /// 스크린샷
-    public static let screenshot = "rectangle.on.rectangle"
-
-    /// 용량 큼
-    public static let largeFile = "externaldrive"
-}
-
 // MARK: - Typography Tokens
 
 /// 타이포그래피 토큰
@@ -634,22 +582,20 @@ public extension ButtonStyle where Self == GhostButtonStyle {
 
             Divider()
 
-            // Issue Icons
+            // Semantic Colors
             Section {
                 VStack(alignment: .leading, spacing: Spacing.sm) {
-                    Label("다운로드 필요", systemImage: IssueIcon.needsDownload)
-                        .foregroundStyle(IssueColor.needsDownload)
-                    Label("다운로드 실패", systemImage: IssueIcon.downloadFailed)
-                        .foregroundStyle(IssueColor.downloadFailed)
-                    Label("손상됨", systemImage: IssueIcon.corrupted)
-                        .foregroundStyle(IssueColor.corrupted)
-                    Label("중복", systemImage: IssueIcon.duplicate)
-                        .foregroundStyle(IssueColor.duplicate)
-                    Label("저화질", systemImage: IssueIcon.lowQuality)
-                        .foregroundStyle(IssueColor.lowQuality)
+                    Label("경고", systemImage: "exclamationmark.icloud")
+                        .foregroundStyle(AppColor.warning)
+                    Label("오류", systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(AppColor.destructive)
+                    Label("정보", systemImage: "info.circle")
+                        .foregroundStyle(AppColor.secondary)
+                    Label("성공", systemImage: "checkmark.circle")
+                        .foregroundStyle(AppColor.success)
                 }
             } header: {
-                Text("Issue Types")
+                Text("Semantic Colors")
                     .font(Typography.title2)
             }
         }
