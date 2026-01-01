@@ -108,8 +108,8 @@ actor PhotoScanService {
                 }
             }
 
-            // 문제 감지
-            let detectedIssues = await detectIssues(for: asset)
+            // 문제 감지 (동기 - 이미지 로드 없이 메타데이터만 확인)
+            let detectedIssues = detectIssues(for: asset)
             issues.append(contentsOf: detectedIssues)
         }
 
@@ -167,7 +167,8 @@ actor PhotoScanService {
                 }
             }
 
-            let detectedIssues = await detectIssues(for: asset, types: issueTypes)
+            // 문제 감지 (동기 - 이미지 로드 없이 메타데이터만 확인)
+            let detectedIssues = detectIssues(for: asset, types: issueTypes)
             issues.append(contentsOf: detectedIssues)
         }
 
@@ -211,28 +212,33 @@ actor PhotoScanService {
         return false
     }
 
-    /// PHFetchResult를 배열로 변환
+    /// PHFetchResult를 배열로 변환 (인덱스 접근으로 최적화)
     private nonisolated func convertToArray(_ fetchResult: PHFetchResult<PHAsset>) -> [PHAsset] {
-        var assets: [PHAsset] = []
-        assets.reserveCapacity(fetchResult.count)
-        fetchResult.enumerateObjects { asset, _, _ in
-            assets.append(asset)
+        let count = fetchResult.count
+        guard count > 0 else { return [] }
+
+        var assets = [PHAsset]()
+        assets.reserveCapacity(count)
+
+        for index in 0..<count {
+            assets.append(fetchResult.object(at: index))
         }
+
         return assets
     }
 
     // MARK: - Issue Detection
 
-    /// 비동기 문제 감지
-    private func detectIssues(
+    /// 문제 감지 (동기 - PHAssetResource 기반으로 빠름)
+    private nonisolated func detectIssues(
         for asset: PHAsset,
         types: [IssueType]? = nil
-    ) async -> [PhotoIssue] {
+    ) -> [PhotoIssue] {
         let targetTypes = types ?? IssueType.allCases
         var issues: [PhotoIssue] = []
 
         for type in targetTypes {
-            if let issue = await detectIssue(for: asset, type: type) {
+            if let issue = detectIssue(for: asset, type: type) {
                 issues.append(issue)
             }
         }
@@ -240,10 +246,10 @@ actor PhotoScanService {
         return issues
     }
 
-    private func detectIssue(for asset: PHAsset, type: IssueType) async -> PhotoIssue? {
+    private nonisolated func detectIssue(for asset: PHAsset, type: IssueType) -> PhotoIssue? {
         switch type {
         case .downloadFailed:
-            return await detectDownloadFailure(for: asset)
+            return detectDownloadFailure(for: asset)
         case .screenshot:
             return detectScreenshot(for: asset)
         case .corrupted:
@@ -258,28 +264,24 @@ actor PhotoScanService {
 
     // MARK: - Detection Methods
 
-    /// iCloud 다운로드 실패 감지 (공식 API 사용)
-    private func detectDownloadFailure(for asset: PHAsset) async -> PhotoIssue? {
-        // 로컬 이미지 요청 시도로 iCloud 상태 확인
-        let options = PHImageRequestOptions()
-        options.isNetworkAccessAllowed = false  // 네트워크 비허용으로 로컬 확인
-        options.deliveryMode = .fastFormat
-        options.resizeMode = .fast
+    /// iCloud 다운로드 실패 감지 (PHAssetResource 사용 - 이미지 로드 없이 빠른 확인)
+    private nonisolated func detectDownloadFailure(for asset: PHAsset) -> PhotoIssue? {
+        let resources = PHAssetResource.assetResources(for: asset)
 
-        let isLocallyAvailable = await withCheckedContinuation { continuation in
-            PHImageManager.default().requestImageDataAndOrientation(
-                for: asset,
-                options: options
-            ) { data, _, _, info in
-                // 데이터가 있으면 로컬에 있음
-                let isLocal = data != nil
-                // 또는 info의 에러 확인
-                let isInCloud = (info?[PHImageResultIsInCloudKey] as? Bool) ?? false
-                continuation.resume(returning: isLocal && !isInCloud)
-            }
+        // 리소스가 없으면 검사 불가
+        guard !resources.isEmpty else { return nil }
+
+        // 로컬에 있는 리소스 확인
+        // - .photo, .fullSizePhoto: 원본 사진
+        // - .adjustmentData: 편집 데이터
+        let localResourceTypes: Set<PHAssetResourceType> = [.photo, .fullSizePhoto]
+
+        let hasLocalResource = resources.contains { resource in
+            localResourceTypes.contains(resource.type)
         }
 
-        if !isLocallyAvailable {
+        // 로컬 리소스가 없으면 iCloud에만 있음
+        if !hasLocalResource {
             return PhotoIssue(
                 asset: asset,
                 issueType: .downloadFailed,

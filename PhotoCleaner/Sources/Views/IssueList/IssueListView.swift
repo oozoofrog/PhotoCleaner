@@ -170,13 +170,11 @@ struct IssueListView: View {
             .filter { selectedIssues.contains($0.id) }
             .map(\.assetIdentifier)
 
-        // 백그라운드에서 fetch 수행
-        let assetsToDelete = await Task.detached {
-            PHAsset.fetchAssets(
-                withLocalIdentifiers: identifiersToDelete,
-                options: nil
-            )
-        }.value
+        // PHAsset.fetchAssets는 동기 함수지만 thread-safe하므로 직접 호출 가능
+        let assetsToDelete = PHAsset.fetchAssets(
+            withLocalIdentifiers: identifiersToDelete,
+            options: nil
+        )
 
         do {
             try await PHPhotoLibrary.shared().performChanges {
@@ -259,45 +257,28 @@ struct PhotoThumbnailView: View {
         }
     }
 
-    /// 썸네일 로드 (안전한 continuation 사용)
+    /// 썸네일 로드
+    /// - Note: deliveryMode = .highQualityFormat + isNetworkAccessAllowed = false 조합으로 단일 콜백 보장
     private func loadThumbnail() async {
         guard let asset = PHAsset.asset(withIdentifier: issue.assetIdentifier) else { return }
 
         let options = PHImageRequestOptions()
-        options.deliveryMode = .highQualityFormat  // 단일 콜백 보장
-        options.isNetworkAccessAllowed = false
+        options.deliveryMode = .highQualityFormat  // degraded 이미지 없이 최종 이미지만 전달
+        options.isNetworkAccessAllowed = false     // 네트워크 로딩 없음 → 단일 콜백 보장
         options.resizeMode = .fast
-        options.isSynchronous = false
 
         let size = ThumbnailSize.grid
 
-        // 안전한 continuation 패턴 사용
-        let loadedImage: UIImage? = await withCheckedContinuation { continuation in
-            var hasResumed = false
-
+        thumbnail = await withCheckedContinuation { continuation in
             PHImageManager.default().requestImage(
                 for: asset,
                 targetSize: size,
                 contentMode: .aspectFill,
                 options: options
-            ) { image, info in
-                // 이미 resume된 경우 무시
-                guard !hasResumed else { return }
-
-                // degraded 이미지가 아닌 경우에만 resume
-                let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
-                let isCancelled = (info?[PHImageCancelledKey] as? Bool) ?? false
-                let hasError = info?[PHImageErrorKey] != nil
-
-                // 최종 이미지이거나 에러/취소된 경우 resume
-                if !isDegraded || isCancelled || hasError {
-                    hasResumed = true
-                    continuation.resume(returning: image)
-                }
+            ) { image, _ in
+                continuation.resume(returning: image)
             }
         }
-
-        thumbnail = loadedImage
     }
 }
 
