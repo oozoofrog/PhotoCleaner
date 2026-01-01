@@ -1,0 +1,287 @@
+{
+  "projectMeta": {
+    "name": "PhotoCleaner",
+    "description": "사진첩의 문제 있는 사진(다운로드 실패, 중복, 손상 등)을 감지하고 제거/수정할 수 있는 iOS 앱",
+    "version": "1.0.0",
+    "startDate": "2026-01-01",
+    "lastUpdated": "2026-01-01",
+    "techStack": [
+      "Swift 5.0",
+      "SwiftUI",
+      "Swift Concurrency",
+      "PhotoKit"
+    ],
+    "repository": "https://github.com/oozoofrog/PhotoCleaner",
+    "bundleId": "com.oozoofrog.app.PhotoCleaner"
+  },
+  "currentStatus": {
+    "phase": "planning",
+    "activeFeature": null,
+    "lastSession": {
+      "date": "2026-01-01",
+      "summary": "프로젝트 초기 설정 - Xcode 프로젝트 생성, .gitignore 추가, project.json 생성",
+      "nextSteps": [
+        "Photos 권한 요청 구현",
+        "사진첩 접근 및 목록 표시 기능 구현",
+        "문제 사진 감지 로직 설계"
+      ]
+    },
+    "blockers": []
+  },
+  "features": [
+    {
+      "id": "feature-001",
+      "name": "사진첩 접근 및 표시",
+      "description": "PhotoKit을 사용하여 사진첩에 접근하고 사진 목록을 표시",
+      "status": "planned",
+      "priority": "high",
+      "dependencies": [],
+      "tasks": [
+        {
+          "id": "task-001",
+          "description": "Photos 권한 요청 및 처리",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        },
+        {
+          "id": "task-002",
+          "description": "PHAsset 목록 조회 서비스 구현",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        },
+        {
+          "id": "task-003",
+          "description": "사진 그리드 UI 구현",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        }
+      ],
+      "notes": "iOS Photos 프레임워크 사용"
+    },
+    {
+      "id": "feature-002",
+      "name": "문제 사진 감지",
+      "description": "다운로드 실패, 손상, iCloud 동기화 문제가 있는 사진 감지",
+      "status": "planned",
+      "priority": "high",
+      "dependencies": ["feature-001"],
+      "tasks": [
+        {
+          "id": "task-004",
+          "description": "iCloud 다운로드 상태 확인 로직",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        },
+        {
+          "id": "task-005",
+          "description": "손상된 이미지 감지 로직",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        },
+        {
+          "id": "task-006",
+          "description": "문제 사진 목록 UI 표시",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        }
+      ],
+      "notes": "PHImageRequestOptions를 활용한 네트워크/로컬 상태 확인"
+    },
+    {
+      "id": "feature-003",
+      "name": "중복 사진 감지",
+      "description": "동일하거나 유사한 사진을 감지하여 정리",
+      "status": "planned",
+      "priority": "medium",
+      "dependencies": ["feature-001"],
+      "tasks": [
+        {
+          "id": "task-007",
+          "description": "이미지 해시 기반 중복 감지",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        },
+        {
+          "id": "task-008",
+          "description": "메타데이터 기반 중복 감지",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        },
+        {
+          "id": "task-009",
+          "description": "중복 그룹 UI 표시",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        }
+      ],
+      "notes": "해시 비교, 메타데이터, Vision 프레임워크 등 다양한 접근 가능"
+    },
+    {
+      "id": "feature-004",
+      "name": "사진 제거/수정",
+      "description": "선택한 사진을 삭제하거나 문제를 수정",
+      "status": "planned",
+      "priority": "high",
+      "dependencies": ["feature-001", "feature-002"],
+      "tasks": [
+        {
+          "id": "task-010",
+          "description": "PHAsset 삭제 요청 구현",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        },
+        {
+          "id": "task-011",
+          "description": "일괄 삭제 기능",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        },
+        {
+          "id": "task-012",
+          "description": "삭제 확인 UI",
+          "status": "todo",
+          "assignedDate": null,
+          "completedDate": null
+        }
+      ],
+      "notes": "PHPhotoLibrary.shared().performChanges 사용"
+    }
+  ],
+  "issues": [],
+  "designDecisions": [
+    {
+      "id": "design-001",
+      "title": "UI 프레임워크 선택",
+      "context": "iOS 앱 개발을 위한 UI 프레임워크 결정",
+      "decision": "SwiftUI 사용",
+      "alternatives": ["UIKit", "SwiftUI + UIKit 하이브리드"],
+      "consequences": "최신 iOS 버전 대상, 선언적 UI, 빠른 개발 가능",
+      "date": "2026-01-01",
+      "status": "accepted"
+    },
+    {
+      "id": "design-002",
+      "title": "동시성 모델",
+      "context": "사진 처리 작업의 동시성 관리 방식 결정",
+      "decision": "Swift Concurrency (async/await, Actor) 사용",
+      "alternatives": ["GCD", "Combine", "Operation Queue"],
+      "consequences": "MainActor 격리로 UI 안전성 확보, 코드 가독성 향상",
+      "date": "2026-01-01",
+      "status": "accepted"
+    },
+    {
+      "id": "design-003",
+      "title": "디자인 철학 수립",
+      "context": "사용자의 소중한 사진을 다루는 앱으로서 일관된 UX 원칙 필요",
+      "decision": "4가지 핵심 가치 정의: 신뢰(Trust), 명료함(Clarity), 효율(Efficiency), 제어력(Control)",
+      "alternatives": ["최소주의 디자인", "기능 중심 디자인", "게이미피케이션"],
+      "consequences": "사용자 신뢰 확보, 실수로 인한 데이터 손실 방지, 접근성 우선",
+      "date": "2026-01-01",
+      "status": "accepted"
+    }
+  ],
+  "architecture": {
+    "overview": "SwiftUI 기반 iOS 앱으로, PhotoKit을 통해 사진첩에 접근하고 문제 사진을 감지/처리",
+    "components": [
+      {
+        "name": "PhotoCleanerApp",
+        "responsibility": "앱 진입점 및 Scene 관리",
+        "dependencies": []
+      },
+      {
+        "name": "ContentView",
+        "responsibility": "메인 UI 뷰",
+        "dependencies": []
+      }
+    ],
+    "dataFlow": "PhotoKit → Service Layer → ViewModel → SwiftUI View",
+    "diagrams": []
+  },
+  "conventions": {
+    "coding": [
+      "Swift API Design Guidelines 준수",
+      "Swift Concurrency 사용 (async/await)",
+      "MainActor 격리 적용"
+    ],
+    "naming": [
+      "타입: PascalCase",
+      "변수/함수: camelCase",
+      "상수: camelCase"
+    ],
+    "fileStructure": "기능별 그룹핑",
+    "gitWorkflow": "main 브랜치 기반 개발"
+  },
+  "environment": {
+    "development": {
+      "setup": [
+        "Xcode 26.2 이상 설치",
+        "프로젝트 클론",
+        "PhotoCleaner.xcodeproj 열기"
+      ],
+      "commands": {
+        "build": "xcodebuild -project PhotoCleaner.xcodeproj -scheme PhotoCleaner",
+        "test": "xcodebuild test -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'platform=iOS Simulator'",
+        "run": "Xcode에서 Run (Cmd+R)"
+      }
+    },
+    "variables": []
+  },
+  "changelog": [
+    {
+      "date": "2026-01-01",
+      "version": "0.0.1",
+      "changes": [
+        "프로젝트 초기 생성",
+        ".gitignore 추가",
+        "project.json 생성",
+        "DESIGN_PHILOSOPHY.md 생성 - 앱 디자인 철학 문서화",
+        "UI_DESIGN_PRINCIPLES.md 생성 - UI 디자인 원칙",
+        "DESIGN_VOCABULARY.md 생성 - 디자인 공통 언어",
+        "DesignTokens.swift 생성 - 색상, 크기, 폰트 토큰 시스템"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "title": "PhotoKit Documentation",
+      "url": "https://developer.apple.com/documentation/photokit",
+      "description": "Apple 공식 PhotoKit 프레임워크 문서"
+    },
+    {
+      "title": "PHAsset",
+      "url": "https://developer.apple.com/documentation/photokit/phasset",
+      "description": "사진/비디오 에셋 표현 클래스"
+    },
+    {
+      "title": "Design Philosophy",
+      "url": "DESIGN_PHILOSOPHY.md",
+      "description": "PhotoCleaner 앱 디자인 철학 문서 - 핵심 가치, 시각 디자인, 인터랙션 패턴, 접근성"
+    },
+    {
+      "title": "UI Design Principles",
+      "url": "UI_DESIGN_PRINCIPLES.md",
+      "description": "레이아웃, 시각적 계층, 일관성, 반응형 디자인 가이드"
+    },
+    {
+      "title": "Design Vocabulary",
+      "url": "DESIGN_VOCABULARY.md",
+      "description": "앱 전반의 공통 용어 정의 - 사진 관련, 문제 유형, 액션, 상태"
+    },
+    {
+      "title": "Design Tokens",
+      "url": "PhotoCleaner/Sources/DesignSystem/DesignTokens.swift",
+      "description": "SwiftUI 디자인 토큰 - 색상, 간격, 타이포그래피, 버튼 스타일"
+    }
+  ]
+}
