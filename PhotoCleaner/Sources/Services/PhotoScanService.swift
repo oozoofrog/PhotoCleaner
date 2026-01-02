@@ -8,18 +8,6 @@
 import Photos
 import UIKit
 
-// MARK: - Scan Configuration
-
-/// 스캔 설정 상수
-enum ScanConfig {
-    /// 진행률 업데이트 간격 (항목 수)
-    static let progressUpdateInterval = 100
-    /// 대용량 파일 기준 (bytes) - 10MB
-    static let largeFileThreshold: Int64 = 10 * 1024 * 1024
-    /// 진행률 업데이트 최소 시간 간격 (초)
-    static let progressDebounceInterval: TimeInterval = 0.1
-}
-
 /// 스캔 진행 상태
 struct ScanProgress: Sendable {
     var phase: ScanPhase
@@ -72,6 +60,15 @@ struct ScanResult {
 /// 사진 스캔 서비스
 actor PhotoScanService {
 
+    // MARK: - Constants
+
+    /// 진행률 업데이트 간격 (항목 수)
+    private nonisolated static let progressUpdateInterval: Int = 100
+    /// 대용량 파일 기준 (bytes) - 10MB
+    private nonisolated static let largeFileThreshold: Int64 = 10 * 1024 * 1024
+    /// 진행률 업데이트 최소 시간 간격 (초)
+    private nonisolated static let progressDebounceInterval: TimeInterval = 0.1
+
     // MARK: - Properties
 
     private var cachedResult: ScanResult?
@@ -81,12 +78,10 @@ actor PhotoScanService {
 
     /// 전체 스캔 수행
     func scanAll(
-        progressHandler: @escaping @Sendable (ScanProgress) -> Void
+        progressHandler: @escaping @MainActor @Sendable (ScanProgress) -> Void
     ) async throws -> ScanResult {
         // 준비 단계
-        await MainActor.run {
-            progressHandler(ScanProgress(phase: .preparing, current: 0, total: 0))
-        }
+        await progressHandler(ScanProgress(phase: .preparing, current: 0, total: 0))
 
         // 모든 사진 가져오기
         let fetchOptions = PHFetchOptions()
@@ -101,11 +96,9 @@ actor PhotoScanService {
 
         for (index, asset) in assets.enumerated() {
             // 진행률 업데이트 (debouncing 적용)
-            if await shouldUpdateProgress(index: index) {
+            if shouldUpdateProgress(index: index) {
                 let progress = ScanProgress(phase: .scanning, current: index + 1, total: total)
-                await MainActor.run {
-                    progressHandler(progress)
-                }
+                await progressHandler(progress)
             }
 
             // 문제 감지 (동기 - 이미지 로드 없이 메타데이터만 확인)
@@ -126,9 +119,7 @@ actor PhotoScanService {
         cachedResult = result
 
         // 완료
-        await MainActor.run {
-            progressHandler(ScanProgress(phase: .completed, current: total, total: total))
-        }
+        await progressHandler(ScanProgress(phase: .completed, current: total, total: total))
 
         return result
     }
@@ -136,11 +127,9 @@ actor PhotoScanService {
     /// 특정 유형만 스캔
     func scan(
         for issueTypes: [IssueType],
-        progressHandler: @escaping @Sendable (ScanProgress) -> Void
+        progressHandler: @escaping @MainActor @Sendable (ScanProgress) -> Void
     ) async throws -> ScanResult {
-        await MainActor.run {
-            progressHandler(ScanProgress(phase: .preparing, current: 0, total: 0))
-        }
+        await progressHandler(ScanProgress(phase: .preparing, current: 0, total: 0))
 
         let fetchOptions = PHFetchOptions()
         fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
@@ -160,11 +149,9 @@ actor PhotoScanService {
         let assets = convertToArray(allAssets)
 
         for (index, asset) in assets.enumerated() {
-            if await shouldUpdateProgress(index: index) {
+            if shouldUpdateProgress(index: index) {
                 let progress = ScanProgress(phase: .scanning, current: index + 1, total: total)
-                await MainActor.run {
-                    progressHandler(progress)
-                }
+                await progressHandler(progress)
             }
 
             // 문제 감지 (동기 - 이미지 로드 없이 메타데이터만 확인)
@@ -181,9 +168,7 @@ actor PhotoScanService {
             scannedAt: Date()
         )
 
-        await MainActor.run {
-            progressHandler(ScanProgress(phase: .completed, current: total, total: total))
-        }
+        await progressHandler(ScanProgress(phase: .completed, current: total, total: total))
 
         return result
     }
@@ -202,10 +187,10 @@ actor PhotoScanService {
 
     /// 진행률 업데이트 필요 여부 (debouncing)
     private func shouldUpdateProgress(index: Int) -> Bool {
-        guard index % ScanConfig.progressUpdateInterval == 0 else { return false }
+        guard index % Self.progressUpdateInterval == 0 else { return false }
 
         let now = Date()
-        if now.timeIntervalSince(lastProgressUpdate) >= ScanConfig.progressDebounceInterval {
+        if now.timeIntervalSince(lastProgressUpdate) >= Self.progressDebounceInterval {
             lastProgressUpdate = now
             return true
         }
@@ -317,6 +302,7 @@ actor PhotoScanService {
         case .photoProxy: return "썸네일"
         case .video, .fullSizeVideo, .pairedVideo: return "비디오"
         case .adjustmentBasePairedVideo, .fullSizePairedVideo, .adjustmentBaseVideo: return "비디오편집"
+        case .audio: return "오디오"
         @unknown default: return "기타"
         }
     }
@@ -376,7 +362,7 @@ actor PhotoScanService {
         let estimatedSize = estimateFileSize(for: asset)
 
         guard let fileSize = estimatedSize,
-              fileSize >= ScanConfig.largeFileThreshold else {
+              fileSize >= Self.largeFileThreshold else {
             return nil
         }
 

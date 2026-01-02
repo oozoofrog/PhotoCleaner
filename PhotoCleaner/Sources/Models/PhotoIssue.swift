@@ -9,7 +9,7 @@ import Photos
 import SwiftUI
 
 /// 문제 유형
-enum IssueType: String, CaseIterable, Identifiable {
+enum IssueType: String, CaseIterable, Identifiable, Sendable {
     case downloadFailed = "downloadFailed"  // iCloud 다운로드 실패
     case corrupted = "corrupted"            // 손상됨
     case screenshot = "screenshot"          // 스크린샷
@@ -41,7 +41,7 @@ enum IssueType: String, CaseIterable, Identifiable {
     }
 
     /// 테마 색상 (AppColor 토큰 사용)
-    var color: Color {
+    @MainActor var color: Color {
         switch self {
         case .downloadFailed: AppColor.warning
         case .corrupted: AppColor.destructive
@@ -68,7 +68,7 @@ enum IssueType: String, CaseIterable, Identifiable {
     }
 
     /// 심각도 기본값
-    var defaultSeverity: IssueSeverity {
+    nonisolated var defaultSeverity: IssueSeverity {
         switch self {
         case .downloadFailed: .warning
         case .corrupted: .critical
@@ -80,7 +80,7 @@ enum IssueType: String, CaseIterable, Identifiable {
 }
 
 /// 문제 심각도
-enum IssueSeverity: Int, Comparable {
+enum IssueSeverity: Int, Comparable, Sendable {
     case info = 0       // 정보성
     case warning = 1    // 주의 필요
     case critical = 2   // 즉시 조치 필요
@@ -97,7 +97,7 @@ enum IssueSeverity: Int, Comparable {
         }
     }
 
-    var color: Color {
+    @MainActor var color: Color {
         switch self {
         case .info: AppColor.secondary
         case .warning: AppColor.warning
@@ -107,7 +107,7 @@ enum IssueSeverity: Int, Comparable {
 }
 
 /// 문제 사진 모델
-struct PhotoIssue: Identifiable, Hashable {
+struct PhotoIssue: Identifiable, Hashable, Sendable {
     let id: String
     let assetIdentifier: String
     let issueType: IssueType
@@ -115,7 +115,7 @@ struct PhotoIssue: Identifiable, Hashable {
     let detectedAt: Date
     let metadata: IssueMetadata
 
-    init(
+    nonisolated init(
         asset: PHAsset,
         issueType: IssueType,
         severity: IssueSeverity? = nil,
@@ -139,11 +139,23 @@ struct PhotoIssue: Identifiable, Hashable {
 }
 
 /// 문제 관련 메타데이터
-struct IssueMetadata: Hashable {
+struct IssueMetadata: Hashable, Sendable {
     var fileSize: Int64?            // 파일 크기 (bytes)
     var errorMessage: String?       // 에러 메시지
     var duplicateGroupId: String?   // 중복 그룹 ID
     var canRecover: Bool = false    // 복구 가능 여부
+
+    nonisolated init(
+        fileSize: Int64? = nil,
+        errorMessage: String? = nil,
+        duplicateGroupId: String? = nil,
+        canRecover: Bool = false
+    ) {
+        self.fileSize = fileSize
+        self.errorMessage = errorMessage
+        self.duplicateGroupId = duplicateGroupId
+        self.canRecover = canRecover
+    }
 
     /// 파일 크기를 사람이 읽기 쉬운 형식으로
     var formattedFileSize: String? {
