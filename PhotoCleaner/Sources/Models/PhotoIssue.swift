@@ -114,6 +114,7 @@ struct PhotoIssue: Identifiable, Hashable, Sendable {
     let severity: IssueSeverity
     let detectedAt: Date
     let metadata: IssueMetadata
+    let aspectRatio: CGFloat  // width / height (자연 비율 그리드용)
 
     nonisolated init(
         asset: PHAsset,
@@ -127,6 +128,9 @@ struct PhotoIssue: Identifiable, Hashable, Sendable {
         self.severity = severity ?? issueType.defaultSeverity
         self.detectedAt = Date()
         self.metadata = metadata
+        self.aspectRatio = asset.pixelHeight > 0
+            ? CGFloat(asset.pixelWidth) / CGFloat(asset.pixelHeight)
+            : 1.0
     }
 
     func hash(into hasher: inout Hasher) {

@@ -93,6 +93,28 @@ public enum TouchTarget {
     public static let large: CGFloat = 56
 }
 
+// MARK: - Grid Layout Tokens
+
+/// 사진 그리드 레이아웃 토큰
+public enum GridLayout {
+    /// 그리드 아이템 최소 너비
+    public static let minItemWidth: CGFloat = 100
+    /// 그리드 아이템 최대 너비
+    public static let maxItemWidth: CGFloat = 150
+    /// Row-justified 레이아웃의 목표 행 높이
+    public static let rowHeight: CGFloat = 120
+}
+
+// MARK: - Thumbnail Size Tokens
+
+/// 썸네일 크기 토큰
+public enum ThumbnailSize {
+    /// 그리드 썸네일 기준 높이 (비율에 따라 너비 계산)
+    public static let gridHeight: CGFloat = 200
+    /// 정사각형 그리드용 (호환성)
+    public static let grid = CGSize(width: 200, height: 200)
+}
+
 // MARK: - Animation Tokens
 
 /// 애니메이션 지속 시간 토큰

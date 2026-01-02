@@ -101,14 +101,9 @@ struct IssueListView: View {
                 // 헤더: 문제 유형 설명 + 통계
                 issueInfoHeader
 
-                // 사진 그리드
-                LazyVGrid(
-                    columns: [
-                        GridItem(
-                            .adaptive(minimum: GridLayout.minItemWidth, maximum: GridLayout.maxItemWidth),
-                            spacing: Spacing.xs
-                        )
-                    ],
+                // Row-justified 사진 그리드 (자연 비율 유지)
+                JustifiedPhotoGrid(
+                    targetRowHeight: GridLayout.rowHeight,
                     spacing: Spacing.xs
                 ) {
                     ForEach(issues) { issue in
@@ -121,6 +116,7 @@ struct IssueListView: View {
                                 toggleSelection(issue.id)
                             }
                         }
+                        .photoAspectRatio(issue.aspectRatio)
                     }
                 }
                 .padding(.horizontal, Spacing.sm)
@@ -294,32 +290,9 @@ struct PhotoThumbnailView: View {
     var body: some View {
         Button(action: onTap) {
             ZStack(alignment: .topTrailing) {
-                // 썸네일
-                Group {
-                    if let image = thumbnail {
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(1, contentMode: .fill)
-                    } else if loadFailed {
-                        // 로딩 실패 시 플레이스홀더
-                        Rectangle()
-                            .fill(AppColor.backgroundSecondary)
-                            .aspectRatio(1, contentMode: .fill)
-                            .overlay {
-                                Image(systemName: "photo")
-                                    .foregroundStyle(AppColor.textTertiary)
-                            }
-                    } else {
-                        // 로딩 중
-                        Rectangle()
-                            .fill(AppColor.backgroundSecondary)
-                            .aspectRatio(1, contentMode: .fill)
-                            .overlay {
-                                ProgressView()
-                            }
-                    }
-                }
-                .clipShape(RoundedRectangle(cornerRadius: CornerRadius.sm))
+                // 썸네일 (레이아웃이 크기 결정, 자연 비율 유지)
+                thumbnailContent
+                    .clipShape(RoundedRectangle(cornerRadius: CornerRadius.sm))
 
                 // 문제 유형 배지
                 if !isSelectionMode {
@@ -358,7 +331,32 @@ struct PhotoThumbnailView: View {
         }
     }
 
-    /// 썸네일 로드
+    /// 썸네일 콘텐츠 (레이아웃에서 제공한 크기에 맞춤)
+    @ViewBuilder
+    private var thumbnailContent: some View {
+        if let image = thumbnail {
+            Image(uiImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+        } else if loadFailed {
+            // 로딩 실패 시 플레이스홀더
+            Rectangle()
+                .fill(AppColor.backgroundSecondary)
+                .overlay {
+                    Image(systemName: "photo")
+                        .foregroundStyle(AppColor.textTertiary)
+                }
+        } else {
+            // 로딩 중
+            Rectangle()
+                .fill(AppColor.backgroundSecondary)
+                .overlay {
+                    ProgressView()
+                }
+        }
+    }
+
+    /// 썸네일 로드 (자연 비율에 맞는 크기로 요청)
     /// - Note: deliveryMode = .highQualityFormat + isNetworkAccessAllowed = false 조합으로 단일 콜백 보장
     private func loadThumbnail() async {
         guard let asset = PHAsset.asset(withIdentifier: issue.assetIdentifier) else {
@@ -371,7 +369,11 @@ struct PhotoThumbnailView: View {
         options.isNetworkAccessAllowed = false     // 네트워크 로딩 없음 → 단일 콜백 보장
         options.resizeMode = .fast
 
-        let size = ThumbnailSize.grid
+        // 자연 비율에 맞는 썸네일 크기 계산
+        let scale = UIScreen.main.scale
+        let targetHeight = ThumbnailSize.gridHeight
+        let targetWidth = targetHeight * issue.aspectRatio
+        let size = CGSize(width: targetWidth * scale, height: targetHeight * scale)
 
         let result = await withCheckedContinuation { continuation in
             PHImageManager.default().requestImage(
@@ -390,21 +392,6 @@ struct PhotoThumbnailView: View {
             loadFailed = true
         }
     }
-}
-
-// MARK: - Thumbnail Size Constants
-
-enum ThumbnailSize {
-    static let grid = CGSize(width: 200, height: 200)
-}
-
-// MARK: - Grid Layout Constants
-
-enum GridLayout {
-    /// 그리드 아이템 최소 너비
-    static let minItemWidth: CGFloat = 100
-    /// 그리드 아이템 최대 너비
-    static let maxItemWidth: CGFloat = 150
 }
 
 // MARK: - Preview
