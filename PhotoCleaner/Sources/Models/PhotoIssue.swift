@@ -51,6 +51,22 @@ enum IssueType: String, CaseIterable, Identifiable {
         }
     }
 
+    /// 사용자용 상세 설명
+    var userDescription: String {
+        switch self {
+        case .downloadFailed:
+            return "iCloud에만 저장된 사진입니다. 설정 > 사진에서 '원본 다운로드'를 선택하세요."
+        case .corrupted:
+            return "사진 파일이 손상되었거나 읽을 수 없습니다."
+        case .screenshot:
+            return "스크린샷은 저장 공간을 차지합니다. 불필요한 것은 삭제하세요."
+        case .largeFile:
+            return "10MB 이상의 대용량 파일입니다."
+        case .duplicate:
+            return "동일하거나 유사한 사진이 여러 장 있습니다."
+        }
+    }
+
     /// 심각도 기본값
     var defaultSeverity: IssueSeverity {
         switch self {

@@ -272,9 +272,16 @@ actor PhotoScanService {
         guard !resources.isEmpty else { return nil }
 
         // 로컬에 있는 리소스 확인
-        // - .photo, .fullSizePhoto: 원본 사진
-        // - .adjustmentData: 편집 데이터
-        let localResourceTypes: Set<PHAssetResourceType> = [.photo, .fullSizePhoto]
+        // - .photo: 원본 사진
+        // - .fullSizePhoto: 편집된 전체 크기 사진
+        // - .alternatePhoto: 대체 사진 (HDR 등)
+        // - .adjustmentBasePhoto: 편집 기준 사진
+        let localResourceTypes: Set<PHAssetResourceType> = [
+            .photo,
+            .fullSizePhoto,
+            .alternatePhoto,
+            .adjustmentBasePhoto
+        ]
 
         let hasLocalResource = resources.contains { resource in
             localResourceTypes.contains(resource.type)
@@ -282,17 +289,36 @@ actor PhotoScanService {
 
         // 로컬 리소스가 없으면 iCloud에만 있음
         if !hasLocalResource {
+            // 사용자에게 보여줄 리소스 타입 정보
+            let resourceTypeNames = resources.map { resourceTypeName($0.type) }
+            let uniqueTypes = Array(Set(resourceTypeNames)).sorted()
+
             return PhotoIssue(
                 asset: asset,
                 issueType: .downloadFailed,
                 severity: .warning,
                 metadata: IssueMetadata(
-                    errorMessage: "iCloud에서 다운로드 필요"
+                    errorMessage: "로컬: \(uniqueTypes.joined(separator: ", "))"
                 )
             )
         }
 
         return nil
+    }
+
+    /// 리소스 타입을 사용자 친화적 이름으로 변환
+    private nonisolated func resourceTypeName(_ type: PHAssetResourceType) -> String {
+        switch type {
+        case .photo: return "원본"
+        case .fullSizePhoto: return "전체크기"
+        case .alternatePhoto: return "대체"
+        case .adjustmentBasePhoto: return "편집원본"
+        case .adjustmentData: return "편집데이터"
+        case .photoProxy: return "썸네일"
+        case .video, .fullSizeVideo, .pairedVideo: return "비디오"
+        case .adjustmentBasePairedVideo, .fullSizePairedVideo, .adjustmentBaseVideo: return "비디오편집"
+        @unknown default: return "기타"
+        }
     }
 
     /// 스크린샷 감지
