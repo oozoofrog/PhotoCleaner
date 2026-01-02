@@ -12,7 +12,7 @@ import SwiftUI
 
 /// 각 사진의 종횡비를 레이아웃에 전달하기 위한 키
 struct AspectRatioKey: LayoutValueKey {
-    static let defaultValue: CGFloat = 1.0
+    nonisolated(unsafe) static let defaultValue: CGFloat = 1.0
 }
 
 extension View {
@@ -38,9 +38,13 @@ struct JustifiedPhotoGrid: Layout {
     /// 마지막 행 확대 여부 (false면 원래 크기 유지)
     let expandLastRow: Bool
 
+    /// - Parameters:
+    ///   - targetRowHeight: 목표 행 높이 (기본값: 120pt, GridLayout.rowHeight)
+    ///   - spacing: 아이템 간 간격 (기본값: 4pt, Spacing.xs)
+    ///   - expandLastRow: 마지막 행 확대 여부
     init(
-        targetRowHeight: CGFloat = GridLayout.rowHeight,
-        spacing: CGFloat = Spacing.xs,
+        targetRowHeight: CGFloat = 120,
+        spacing: CGFloat = 4,
         expandLastRow: Bool = false
     ) {
         self.targetRowHeight = targetRowHeight
