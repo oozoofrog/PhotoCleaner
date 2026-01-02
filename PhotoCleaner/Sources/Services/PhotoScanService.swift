@@ -9,7 +9,7 @@ import Photos
 import UIKit
 
 /// 스캔 진행 상태
-struct ScanProgress {
+struct ScanProgress: Sendable {
     var phase: ScanPhase
     var current: Int
     var total: Int
@@ -30,7 +30,7 @@ struct ScanProgress {
     }
 }
 
-enum ScanPhase {
+enum ScanPhase: Sendable {
     case preparing
     case scanning
     case completed
@@ -60,20 +60,28 @@ struct ScanResult {
 /// 사진 스캔 서비스
 actor PhotoScanService {
 
+    // MARK: - Constants
+
+    /// 진행률 업데이트 간격 (항목 수)
+    private nonisolated static let progressUpdateInterval: Int = 100
+    /// 대용량 파일 기준 (bytes) - 10MB
+    private nonisolated static let largeFileThreshold: Int64 = 10 * 1024 * 1024
+    /// 진행률 업데이트 최소 시간 간격 (초)
+    private nonisolated static let progressDebounceInterval: TimeInterval = 0.1
+
     // MARK: - Properties
 
     private var cachedResult: ScanResult?
+    private var lastProgressUpdate: Date = .distantPast
 
     // MARK: - Public Methods
 
     /// 전체 스캔 수행
     func scanAll(
-        progressHandler: @escaping @Sendable (ScanProgress) -> Void
+        progressHandler: @escaping @MainActor @Sendable (ScanProgress) -> Void
     ) async throws -> ScanResult {
         // 준비 단계
-        await MainActor.run {
-            progressHandler(ScanProgress(phase: .preparing, current: 0, total: 0))
-        }
+        await progressHandler(ScanProgress(phase: .preparing, current: 0, total: 0))
 
         // 모든 사진 가져오기
         let fetchOptions = PHFetchOptions()
@@ -82,22 +90,19 @@ actor PhotoScanService {
 
         let total = allAssets.count
         var issues: [PhotoIssue] = []
-        var current = 0
 
-        // 스캔 시작
-        allAssets.enumerateObjects { [self] asset, index, _ in
-            current = index + 1
+        // 스캔 시작 - 비동기 처리로 변경
+        let assets = convertToArray(allAssets)
 
-            // 진행률 업데이트 (100개마다)
-            if index % 100 == 0 {
-                let progress = ScanProgress(phase: .scanning, current: current, total: total)
-                Task { @MainActor in
-                    progressHandler(progress)
-                }
+        for (index, asset) in assets.enumerated() {
+            // 진행률 업데이트 (debouncing 적용)
+            if shouldUpdateProgress(index: index) {
+                let progress = ScanProgress(phase: .scanning, current: index + 1, total: total)
+                await progressHandler(progress)
             }
 
-            // 문제 감지
-            let detectedIssues = self.detectIssuesSync(for: asset)
+            // 문제 감지 (동기 - 이미지 로드 없이 메타데이터만 확인)
+            let detectedIssues = detectIssues(for: asset)
             issues.append(contentsOf: detectedIssues)
         }
 
@@ -114,9 +119,7 @@ actor PhotoScanService {
         cachedResult = result
 
         // 완료
-        await MainActor.run {
-            progressHandler(ScanProgress(phase: .completed, current: total, total: total))
-        }
+        await progressHandler(ScanProgress(phase: .completed, current: total, total: total))
 
         return result
     }
@@ -124,11 +127,9 @@ actor PhotoScanService {
     /// 특정 유형만 스캔
     func scan(
         for issueTypes: [IssueType],
-        progressHandler: @escaping @Sendable (ScanProgress) -> Void
+        progressHandler: @escaping @MainActor @Sendable (ScanProgress) -> Void
     ) async throws -> ScanResult {
-        await MainActor.run {
-            progressHandler(ScanProgress(phase: .preparing, current: 0, total: 0))
-        }
+        await progressHandler(ScanProgress(phase: .preparing, current: 0, total: 0))
 
         let fetchOptions = PHFetchOptions()
         fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
@@ -145,15 +146,16 @@ actor PhotoScanService {
         let total = allAssets.count
         var issues: [PhotoIssue] = []
 
-        allAssets.enumerateObjects { asset, index, _ in
-            if index % 100 == 0 {
+        let assets = convertToArray(allAssets)
+
+        for (index, asset) in assets.enumerated() {
+            if shouldUpdateProgress(index: index) {
                 let progress = ScanProgress(phase: .scanning, current: index + 1, total: total)
-                Task { @MainActor in
-                    progressHandler(progress)
-                }
+                await progressHandler(progress)
             }
 
-            let detectedIssues = self.detectIssuesSync(for: asset, types: issueTypes)
+            // 문제 감지 (동기 - 이미지 로드 없이 메타데이터만 확인)
+            let detectedIssues = detectIssues(for: asset, types: issueTypes)
             issues.append(contentsOf: detectedIssues)
         }
 
@@ -166,9 +168,7 @@ actor PhotoScanService {
             scannedAt: Date()
         )
 
-        await MainActor.run {
-            progressHandler(ScanProgress(phase: .completed, current: total, total: total))
-        }
+        await progressHandler(ScanProgress(phase: .completed, current: total, total: total))
 
         return result
     }
@@ -183,9 +183,39 @@ actor PhotoScanService {
         cachedResult = nil
     }
 
-    // MARK: - Issue Detection (Sync for enumeration)
+    // MARK: - Progress Debouncing
 
-    private nonisolated func detectIssuesSync(
+    /// 진행률 업데이트 필요 여부 (debouncing)
+    private func shouldUpdateProgress(index: Int) -> Bool {
+        guard index % Self.progressUpdateInterval == 0 else { return false }
+
+        let now = Date()
+        if now.timeIntervalSince(lastProgressUpdate) >= Self.progressDebounceInterval {
+            lastProgressUpdate = now
+            return true
+        }
+        return false
+    }
+
+    /// PHFetchResult를 배열로 변환 (인덱스 접근으로 최적화)
+    private nonisolated func convertToArray(_ fetchResult: PHFetchResult<PHAsset>) -> [PHAsset] {
+        let count = fetchResult.count
+        guard count > 0 else { return [] }
+
+        var assets = [PHAsset]()
+        assets.reserveCapacity(count)
+
+        for index in 0..<count {
+            assets.append(fetchResult.object(at: index))
+        }
+
+        return assets
+    }
+
+    // MARK: - Issue Detection
+
+    /// 문제 감지 (동기 - PHAssetResource 기반으로 빠름)
+    private nonisolated func detectIssues(
         for asset: PHAsset,
         types: [IssueType]? = nil
     ) -> [PhotoIssue] {
@@ -212,39 +242,69 @@ actor PhotoScanService {
         case .largeFile:
             return detectLargeFile(for: asset)
         case .duplicate:
-            return nil  // 별도 처리 필요
+            // TODO: Phase 2에서 구현 예정 - 해시 기반 중복 감지
+            return nil
         }
     }
 
     // MARK: - Detection Methods
 
-    /// iCloud 다운로드 실패 감지
+    /// iCloud 다운로드 실패 감지 (PHAssetResource 사용 - 이미지 로드 없이 빠른 확인)
     private nonisolated func detectDownloadFailure(for asset: PHAsset) -> PhotoIssue? {
         let resources = PHAssetResource.assetResources(for: asset)
 
-        // 원본 사진 리소스 찾기
-        guard let photoResource = resources.first(where: { $0.type == .photo || $0.type == .fullSizePhoto }) else {
-            return nil
+        // 리소스가 없으면 검사 불가
+        guard !resources.isEmpty else { return nil }
+
+        // 로컬에 있는 리소스 확인
+        // - .photo: 원본 사진
+        // - .fullSizePhoto: 편집된 전체 크기 사진
+        // - .alternatePhoto: 대체 사진 (HDR 등)
+        // - .adjustmentBasePhoto: 편집 기준 사진
+        let localResourceTypes: Set<PHAssetResourceType> = [
+            .photo,
+            .fullSizePhoto,
+            .alternatePhoto,
+            .adjustmentBasePhoto
+        ]
+
+        let hasLocalResource = resources.contains { resource in
+            localResourceTypes.contains(resource.type)
         }
 
-        // 로컬에 있는지 확인
-        let isLocal = photoResource.value(forKey: "locallyAvailable") as? Bool ?? true
+        // 로컬 리소스가 없으면 iCloud에만 있음
+        if !hasLocalResource {
+            // 사용자에게 보여줄 리소스 타입 정보
+            let resourceTypeNames = resources.map { resourceTypeName($0.type) }
+            let uniqueTypes = Array(Set(resourceTypeNames)).sorted()
 
-        // 로컬에 없으면 iCloud에서 다운로드 필요
-        if !isLocal {
-            // 다운로드 시도해서 실패하는지 확인하는 것은 비용이 크므로
-            // 우선 로컬에 없는 것만 표시
             return PhotoIssue(
                 asset: asset,
                 issueType: .downloadFailed,
                 severity: .warning,
                 metadata: IssueMetadata(
-                    errorMessage: "iCloud에서 다운로드 필요"
+                    errorMessage: "로컬: \(uniqueTypes.joined(separator: ", "))"
                 )
             )
         }
 
         return nil
+    }
+
+    /// 리소스 타입을 사용자 친화적 이름으로 변환
+    private nonisolated func resourceTypeName(_ type: PHAssetResourceType) -> String {
+        switch type {
+        case .photo: return "원본"
+        case .fullSizePhoto: return "전체크기"
+        case .alternatePhoto: return "대체"
+        case .adjustmentBasePhoto: return "편집원본"
+        case .adjustmentData: return "편집데이터"
+        case .photoProxy: return "썸네일"
+        case .video, .fullSizeVideo, .pairedVideo: return "비디오"
+        case .adjustmentBasePairedVideo, .fullSizePairedVideo, .adjustmentBaseVideo: return "비디오편집"
+        case .audio: return "오디오"
+        @unknown default: return "기타"
+        }
     }
 
     /// 스크린샷 감지
@@ -253,15 +313,14 @@ actor PhotoScanService {
             return nil
         }
 
-        // 파일 크기 가져오기
-        let resources = PHAssetResource.assetResources(for: asset)
-        let fileSize = resources.first?.value(forKey: "fileSize") as? Int64
+        // 파일 크기 추정 (픽셀 기반)
+        let estimatedSize = estimateFileSize(for: asset)
 
         return PhotoIssue(
             asset: asset,
             issueType: .screenshot,
             severity: .info,
-            metadata: IssueMetadata(fileSize: fileSize)
+            metadata: IssueMetadata(fileSize: estimatedSize)
         )
     }
 
@@ -282,17 +341,14 @@ actor PhotoScanService {
             )
         }
 
-        // 파일 크기가 0이면 손상
-        if let photoResource = resources.first(where: { $0.type == .photo || $0.type == .fullSizePhoto }),
-           let fileSize = photoResource.value(forKey: "fileSize") as? Int64,
-           fileSize == 0 {
+        // 픽셀 크기가 0인 경우 손상 가능성
+        if asset.pixelWidth == 0 || asset.pixelHeight == 0 {
             return PhotoIssue(
                 asset: asset,
                 issueType: .corrupted,
                 severity: .critical,
                 metadata: IssueMetadata(
-                    fileSize: 0,
-                    errorMessage: "파일 크기가 0",
+                    errorMessage: "이미지 크기가 0",
                     canRecover: false
                 )
             )
@@ -301,16 +357,12 @@ actor PhotoScanService {
         return nil
     }
 
-    /// 대용량 파일 감지
-    private nonisolated func detectLargeFile(
-        for asset: PHAsset,
-        threshold: Int64 = 10 * 1024 * 1024  // 10MB
-    ) -> PhotoIssue? {
-        let resources = PHAssetResource.assetResources(for: asset)
+    /// 대용량 파일 감지 (픽셀 기반 추정)
+    private nonisolated func detectLargeFile(for asset: PHAsset) -> PhotoIssue? {
+        let estimatedSize = estimateFileSize(for: asset)
 
-        guard let photoResource = resources.first(where: { $0.type == .photo || $0.type == .fullSizePhoto }),
-              let fileSize = photoResource.value(forKey: "fileSize") as? Int64,
-              fileSize >= threshold else {
+        guard let fileSize = estimatedSize,
+              fileSize >= Self.largeFileThreshold else {
             return nil
         }
 
@@ -320,6 +372,17 @@ actor PhotoScanService {
             severity: .info,
             metadata: IssueMetadata(fileSize: fileSize)
         )
+    }
+
+    /// 파일 크기 추정 (픽셀 기반)
+    /// - Note: 실제 파일 크기는 압축 방식에 따라 다르므로 추정값임
+    private nonisolated func estimateFileSize(for asset: PHAsset) -> Int64? {
+        let pixelCount = Int64(asset.pixelWidth) * Int64(asset.pixelHeight)
+        guard pixelCount > 0 else { return nil }
+
+        // HEIC/JPEG 평균 압축률 고려 (약 0.3~0.5 bytes per pixel)
+        // 보수적으로 0.4 사용
+        return Int64(Double(pixelCount) * 0.4)
     }
 
     // MARK: - Helper Methods

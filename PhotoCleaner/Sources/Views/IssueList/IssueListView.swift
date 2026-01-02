@@ -15,6 +15,7 @@ struct IssueListView: View {
     @State private var selectedIssues: Set<String> = []
     @State private var isSelectionMode = false
     @State private var showDeleteConfirmation = false
+    @State private var cachedStats: [(key: String, value: Int)] = []
 
     var body: some View {
         Group {
@@ -57,6 +58,19 @@ struct IssueListView: View {
         } message: {
             Text("\(selectedIssues.count)장의 사진을 삭제할까요?\n삭제된 사진은 '최근 삭제된 항목'으로 이동됩니다.")
         }
+        .alert(
+            "삭제 실패",
+            isPresented: Binding(
+                get: { deleteError != nil },
+                set: { if !$0 { deleteError = nil } }
+            )
+        ) {
+            Button("확인") {
+                deleteError = nil
+            }
+        } message: {
+            Text(deleteError ?? "")
+        }
     }
 
     // MARK: - Empty State
@@ -83,26 +97,106 @@ struct IssueListView: View {
 
     private var issueListContent: some View {
         ScrollView {
-            LazyVGrid(
-                columns: [
-                    GridItem(.adaptive(minimum: 100, maximum: 150), spacing: Spacing.xs)
-                ],
-                spacing: Spacing.xs
-            ) {
-                ForEach(issues) { issue in
-                    PhotoThumbnailView(
-                        issue: issue,
-                        isSelected: selectedIssues.contains(issue.id),
-                        isSelectionMode: isSelectionMode
-                    ) {
-                        if isSelectionMode {
-                            toggleSelection(issue.id)
+            VStack(spacing: Spacing.sm) {
+                // 헤더: 문제 유형 설명 + 통계
+                issueInfoHeader
+
+                // 사진 그리드
+                LazyVGrid(
+                    columns: [
+                        GridItem(
+                            .adaptive(minimum: GridLayout.minItemWidth, maximum: GridLayout.maxItemWidth),
+                            spacing: Spacing.xs
+                        )
+                    ],
+                    spacing: Spacing.xs
+                ) {
+                    ForEach(issues) { issue in
+                        PhotoThumbnailView(
+                            issue: issue,
+                            isSelected: selectedIssues.contains(issue.id),
+                            isSelectionMode: isSelectionMode
+                        ) {
+                            if isSelectionMode {
+                                toggleSelection(issue.id)
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, Spacing.sm)
+            }
+            .padding(.top, Spacing.sm)
+        }
+        .onAppear {
+            if issueType == .downloadFailed {
+                cachedStats = computeResourceStatistics()
+            }
+        }
+    }
+
+    // MARK: - Issue Info Header
+
+    private var issueInfoHeader: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            // 문제 유형 아이콘 + 이름
+            Label(issueType.displayName, systemImage: issueType.iconName)
+                .font(Typography.headline)
+                .foregroundStyle(issueType.color)
+
+            // 사용자용 설명
+            Text(issueType.userDescription)
+                .font(Typography.subheadline)
+                .foregroundStyle(AppColor.textSecondary)
+
+            // 다운로드 실패 유형인 경우 상세 통계 표시
+            if issueType == .downloadFailed {
+                resourceStatisticsView
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Spacing.md)
+        .background(AppColor.backgroundSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md))
+        .padding(.horizontal, Spacing.sm)
+    }
+
+    // MARK: - Resource Statistics (다운로드 실패 전용)
+
+    private var resourceStatisticsView: some View {
+        Group {
+            if !cachedStats.isEmpty {
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    Divider()
+                        .padding(.vertical, Spacing.xs)
+
+                    Text("상세 분류")
+                        .font(Typography.caption)
+                        .foregroundStyle(AppColor.textTertiary)
+
+                    ForEach(cachedStats.prefix(5), id: \.key) { key, count in
+                        HStack {
+                            Text(key)
+                                .font(Typography.caption)
+                                .foregroundStyle(AppColor.textPrimary)
+                            Spacer()
+                            Text("\(count)장")
+                                .font(Typography.caption)
+                                .foregroundStyle(AppColor.textSecondary)
                         }
                     }
                 }
             }
-            .padding(Spacing.sm)
         }
+    }
+
+    /// 리소스 타입별 통계 계산
+    private func computeResourceStatistics() -> [(key: String, value: Int)] {
+        let grouped = Dictionary(grouping: issues) { issue in
+            issue.metadata.errorMessage ?? "알 수 없음"
+        }
+        return grouped
+            .mapValues { $0.count }
+            .sorted { $0.value > $1.value }
     }
 
     // MARK: - Selection Toolbar
@@ -137,6 +231,9 @@ struct IssueListView: View {
         .background(.ultraThinMaterial)
     }
 
+    @State private var isDeleting = false
+    @State private var deleteError: String?
+
     // MARK: - Actions
 
     private func toggleSelection(_ id: String) {
@@ -147,25 +244,38 @@ struct IssueListView: View {
         }
     }
 
+    /// 선택된 사진 삭제 (비동기, 백그라운드 처리)
     private func deleteSelectedPhotos() {
+        guard !isDeleting else { return }
+        isDeleting = true  // 즉시 설정하여 race condition 방지
+
+        Task {
+            await performDeletion()
+        }
+    }
+
+    private func performDeletion() async {
+        deleteError = nil
+        defer { isDeleting = false }  // 함수 종료 시 항상 리셋
+
         let identifiersToDelete = issues
             .filter { selectedIssues.contains($0.id) }
             .map(\.assetIdentifier)
 
+        // PHAsset.fetchAssets는 동기 함수지만 thread-safe하므로 직접 호출 가능
         let assetsToDelete = PHAsset.fetchAssets(
             withLocalIdentifiers: identifiersToDelete,
             options: nil
         )
 
-        PHPhotoLibrary.shared().performChanges {
-            PHAssetChangeRequest.deleteAssets(assetsToDelete)
-        } completionHandler: { success, error in
-            Task { @MainActor in
-                if success {
-                    selectedIssues.removeAll()
-                    isSelectionMode = false
-                }
+        do {
+            try await PHPhotoLibrary.shared().performChanges {
+                PHAssetChangeRequest.deleteAssets(assetsToDelete)
             }
+            selectedIssues.removeAll()
+            isSelectionMode = false
+        } catch {
+            deleteError = error.localizedDescription
         }
     }
 }
@@ -179,6 +289,7 @@ struct PhotoThumbnailView: View {
     let onTap: () -> Void
 
     @State private var thumbnail: UIImage?
+    @State private var loadFailed = false
 
     var body: some View {
         Button(action: onTap) {
@@ -189,7 +300,17 @@ struct PhotoThumbnailView: View {
                         Image(uiImage: image)
                             .resizable()
                             .aspectRatio(1, contentMode: .fill)
+                    } else if loadFailed {
+                        // 로딩 실패 시 플레이스홀더
+                        Rectangle()
+                            .fill(AppColor.backgroundSecondary)
+                            .aspectRatio(1, contentMode: .fill)
+                            .overlay {
+                                Image(systemName: "photo")
+                                    .foregroundStyle(AppColor.textTertiary)
+                            }
                     } else {
+                        // 로딩 중
                         Rectangle()
                             .fill(AppColor.backgroundSecondary)
                             .aspectRatio(1, contentMode: .fill)
@@ -237,30 +358,53 @@ struct PhotoThumbnailView: View {
         }
     }
 
+    /// 썸네일 로드
+    /// - Note: deliveryMode = .highQualityFormat + isNetworkAccessAllowed = false 조합으로 단일 콜백 보장
     private func loadThumbnail() async {
-        guard let asset = PHAsset.asset(withIdentifier: issue.assetIdentifier) else { return }
+        guard let asset = PHAsset.asset(withIdentifier: issue.assetIdentifier) else {
+            loadFailed = true
+            return
+        }
 
         let options = PHImageRequestOptions()
-        options.deliveryMode = .opportunistic
-        options.isNetworkAccessAllowed = false
+        options.deliveryMode = .highQualityFormat  // degraded 이미지 없이 최종 이미지만 전달
+        options.isNetworkAccessAllowed = false     // 네트워크 로딩 없음 → 단일 콜백 보장
         options.resizeMode = .fast
 
-        let size = CGSize(width: 200, height: 200)
+        let size = ThumbnailSize.grid
 
-        await withCheckedContinuation { continuation in
+        let result = await withCheckedContinuation { continuation in
             PHImageManager.default().requestImage(
                 for: asset,
                 targetSize: size,
                 contentMode: .aspectFill,
                 options: options
             ) { image, _ in
-                Task { @MainActor in
-                    self.thumbnail = image
-                    continuation.resume()
-                }
+                continuation.resume(returning: image)
             }
         }
+
+        if let image = result {
+            thumbnail = image
+        } else {
+            loadFailed = true
+        }
     }
+}
+
+// MARK: - Thumbnail Size Constants
+
+enum ThumbnailSize {
+    static let grid = CGSize(width: 200, height: 200)
+}
+
+// MARK: - Grid Layout Constants
+
+enum GridLayout {
+    /// 그리드 아이템 최소 너비
+    static let minItemWidth: CGFloat = 100
+    /// 그리드 아이템 최대 너비
+    static let maxItemWidth: CGFloat = 150
 }
 
 // MARK: - Preview

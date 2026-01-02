@@ -149,7 +149,7 @@ final class DashboardViewModel {
         guard let date = lastScanDate else { return nil }
 
         let formatter = RelativeDateTimeFormatter()
-        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.locale = .current
         formatter.unitsStyle = .short
         return formatter.localizedString(for: date, relativeTo: Date())
     }
