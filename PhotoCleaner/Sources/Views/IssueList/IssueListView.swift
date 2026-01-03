@@ -31,6 +31,7 @@ struct IssueListView: View {
     @State private var selectedDateFilter: DateFilter = .all
     @State private var groupedByDate: [DateFilter: [PhotoIssue]] = [:]
     @State private var sizeChangeTask: Task<Void, Never>?
+    @State private var selectedIssue: PhotoIssue?
 
     /// 대용량 파일은 크기순 정렬, 그 외는 원본 순서
     private var sortedIssues: [PhotoIssue] {
@@ -93,6 +94,11 @@ struct IssueListView: View {
             }
         } message: {
             Text(deleteError ?? "")
+        }
+        .navigationDestination(item: $selectedIssue) { issue in
+            if let asset = PHAsset.asset(withIdentifier: issue.assetIdentifier) {
+                PhotoDetailView(asset: asset, issue: issue)
+            }
         }
     }
 
@@ -161,6 +167,8 @@ struct IssueListView: View {
                 ) {
                     if isSelectionMode {
                         toggleSelection(issue.id)
+                    } else {
+                        selectedIssue = issue
                     }
                 }
                 .photoAspectRatio(issue.aspectRatio)

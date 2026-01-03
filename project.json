@@ -4,7 +4,7 @@
     "description": "사진첩의 문제 있는 사진(다운로드 실패, 중복, 손상 등)을 감지하고 제거/수정할 수 있는 iOS 앱",
     "version": "1.0.0",
     "startDate": "2026-01-01",
-    "lastUpdated": "2026-01-02",
+    "lastUpdated": "2026-01-04",
     "techStack": [
       "Swift 6",
       "SwiftUI",
@@ -20,9 +20,9 @@
     "activeFeature": null,
     "lastSession": {
       "date": "2026-01-04",
-      "summary": "설정 화면 구현 + 전체 사진 그리드 UI - AppSettings, SettingsView, AllPhotosView",
+      "summary": "사진 상세 화면 구현 - PhotoDetailView, PhotoMetadataSheet, IssueListView 네비게이션",
       "nextSteps": [
-        "사진 상세 화면",
+        "AllPhotosView에서 상세 화면 네비게이션 추가",
         "메타데이터 기반 중복 감지 (task-008, 선택적)",
         "자동 검사 기능"
       ]
@@ -292,6 +292,38 @@
         }
       ],
       "notes": "AppSettings(@Observable), SettingsView 구현 완료. 검사설정, 표시설정, 데이터 관리, 앱 정보 섹션 포함"
+    },
+    {
+      "id": "feature-009",
+      "name": "사진 상세 화면",
+      "description": "사진 전체 화면 보기, 메타데이터 표시, 삭제 기능",
+      "status": "completed",
+      "priority": "high",
+      "dependencies": ["feature-001", "feature-002"],
+      "tasks": [
+        {
+          "id": "task-026",
+          "description": "PhotoDetailView 구현",
+          "status": "completed",
+          "assignedDate": "2026-01-04",
+          "completedDate": "2026-01-04"
+        },
+        {
+          "id": "task-027",
+          "description": "PhotoMetadataSheet 구현",
+          "status": "completed",
+          "assignedDate": "2026-01-04",
+          "completedDate": "2026-01-04"
+        },
+        {
+          "id": "task-028",
+          "description": "IssueListView 네비게이션 연결",
+          "status": "completed",
+          "assignedDate": "2026-01-04",
+          "completedDate": "2026-01-04"
+        }
+      ],
+      "notes": "문제 사진 목록에서 탭 시 상세 화면으로 이동. 메타데이터 시트에서 문제 정보 및 사진 정보 표시"
     }
   ],
   "issues": [],
@@ -358,6 +390,11 @@
       {
         "name": "IssueListView",
         "responsibility": "문제 사진 목록 표시 및 선택/삭제 UI",
+        "dependencies": ["PhotoIssue"]
+      },
+      {
+        "name": "PhotoDetailView",
+        "responsibility": "사진 전체 화면 보기, 메타데이터 표시, 삭제 기능",
         "dependencies": ["PhotoIssue"]
       },
       {
@@ -502,6 +539,16 @@
         "대시보드 네비게이션 바에 설정 버튼 추가",
         "DuplicateDetectionMode, SimilarityThreshold, ThumbnailSize, SortOrder enum 추가",
         "DashboardViewModel.clearCache() 메서드 추가"
+      ]
+    },
+    {
+      "date": "2026-01-04",
+      "version": "0.5.0",
+      "changes": [
+        "사진 상세 화면 구현 (feature-009)",
+        "PhotoDetailView - 전체 화면 사진 보기 및 삭제",
+        "PhotoMetadataSheet - 문제 정보 및 사진 메타데이터 표시",
+        "IssueListView에서 상세 화면 네비게이션 연결"
       ]
     }
   ],
