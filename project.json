@@ -18,10 +18,10 @@
     "phase": "development",
     "activeFeature": "feature-003",
     "lastSession": {
-      "date": "2026-01-02",
-      "summary": "Phase 1 MVP 구현 완료 - 사진 권한, 스캔 서비스, 대시보드 UI, 4가지 문제 감지(iCloud/손상/스크린샷/대용량), 삭제 기능",
+      "date": "2026-01-03",
+      "summary": "중복 사진 감지 기능 Phase 1 구현 - SHA256 해시 기반 완전 동일 감지, 원본 자동 선택, 대시보드 중복 카드 섹션",
       "nextSteps": [
-        "중복 사진 감지 기능 구현 (feature-003)",
+        "유사 사진 감지 구현 (Vision pHash)",
         "스크린샷 날짜별 그룹핑 UI",
         "대용량 파일 크기 설정 UI"
       ]
@@ -97,16 +97,16 @@
       "id": "feature-003",
       "name": "중복 사진 감지",
       "description": "동일하거나 유사한 사진을 감지하여 정리",
-      "status": "planned",
+      "status": "in_progress",
       "priority": "medium",
       "dependencies": ["feature-001"],
       "tasks": [
         {
           "id": "task-007",
           "description": "이미지 해시 기반 중복 감지",
-          "status": "todo",
-          "assignedDate": null,
-          "completedDate": null
+          "status": "completed",
+          "assignedDate": "2026-01-03",
+          "completedDate": "2026-01-03"
         },
         {
           "id": "task-008",
@@ -118,12 +118,12 @@
         {
           "id": "task-009",
           "description": "중복 그룹 UI 표시",
-          "status": "todo",
-          "assignedDate": null,
-          "completedDate": null
+          "status": "completed",
+          "assignedDate": "2026-01-03",
+          "completedDate": "2026-01-03"
         }
       ],
-      "notes": "DuplicateGroup 모델 정의됨. 감지 로직 구현 필요"
+      "notes": "SHA256 해시 기반 완전 동일 중복 감지 구현 완료. 대시보드에 중복 카드 섹션 추가. 유사 사진 감지(Phase 2)는 미구현"
     },
     {
       "id": "feature-004",
@@ -412,6 +412,18 @@
         "DashboardViewModel 구현 - @Observable 기반 상태 관리",
         "IssueListView 구현 - 문제 사진 그리드, 다중 선택, 삭제",
         "PhotoThumbnailView 구현 - 비동기 썸네일 로딩"
+      ]
+    },
+    {
+      "date": "2026-01-03",
+      "version": "0.2.0",
+      "changes": [
+        "중복 사진 감지 기능 구현 (Phase 1 - 완전 동일)",
+        "SHA256 해시 기반 스트리밍 중복 감지 (CryptoKit)",
+        "원본 자동 선택 로직 (해상도 > 파일크기 > 생성일)",
+        "DuplicateGroup 모델 활용 및 ScanResult 확장",
+        "대시보드에 중복 사진 카드 섹션 추가",
+        "DuplicateDetectionTests 테스트 케이스 추가"
       ]
     }
   ],

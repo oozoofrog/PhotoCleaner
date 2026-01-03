@@ -56,9 +56,12 @@ struct DashboardView: View {
                     Task { await viewModel.startScan() }
                 }
 
-                // 문제 유형별 카드 그리드
                 if viewModel.hasScanned {
                     issueCardsSection
+
+                    if viewModel.hasDuplicates {
+                        duplicateSection
+                    }
                 }
             }
             .padding(Spacing.md)
@@ -95,6 +98,61 @@ struct DashboardView: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private var duplicateSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            Text("중복 사진")
+                .font(Typography.headline)
+                .foregroundStyle(AppColor.textPrimary)
+
+            DuplicateCard(
+                groupCount: viewModel.duplicateSummary.groupCount,
+                duplicateCount: viewModel.duplicateSummary.duplicateCount,
+                potentialSavings: viewModel.formattedPotentialSavings
+            ) {
+                selectedIssueType = .duplicate
+            }
+        }
+    }
+}
+
+struct DuplicateCard: View {
+    let groupCount: Int
+    let duplicateCount: Int
+    let potentialSavings: String
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack {
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    HStack {
+                        Image(systemName: "square.on.square")
+                            .font(.system(size: IconSize.lg))
+                            .foregroundStyle(AppColor.primary)
+
+                        Text("중복 그룹 \(groupCount)개")
+                            .font(Typography.headline)
+                            .foregroundStyle(AppColor.textPrimary)
+                    }
+
+                    Text("\(duplicateCount)장 정리 시 \(potentialSavings) 확보")
+                        .font(Typography.subheadline)
+                        .foregroundStyle(AppColor.textSecondary)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .foregroundStyle(AppColor.textTertiary)
+            }
+            .padding(Spacing.md)
+            .background(AppColor.backgroundSecondary)
+            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md))
+        }
+        .buttonStyle(.plain)
     }
 }
 

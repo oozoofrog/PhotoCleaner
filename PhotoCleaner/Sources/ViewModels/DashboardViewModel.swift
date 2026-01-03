@@ -134,17 +134,14 @@ final class DashboardViewModel {
         scanProgress = nil
     }
 
-    /// 특정 유형의 요약 가져오기
     func summary(for type: IssueType) -> IssueSummary? {
         scanResult?.summary(for: type)
     }
 
-    /// 특정 유형의 문제 목록 가져오기
     func issues(for type: IssueType) -> [PhotoIssue] {
         scanResult?.issues(for: type) ?? []
     }
 
-    /// 마지막 검사 시간 포맷
     var formattedLastScanDate: String? {
         guard let date = lastScanDate else { return nil }
 
@@ -152,5 +149,21 @@ final class DashboardViewModel {
         formatter.locale = .current
         formatter.unitsStyle = .short
         return formatter.localizedString(for: date, relativeTo: Date())
+    }
+
+    var duplicateGroups: [DuplicateGroup] {
+        scanResult?.duplicateGroups ?? []
+    }
+
+    var duplicateSummary: (groupCount: Int, duplicateCount: Int, potentialSavings: Int64) {
+        scanResult?.duplicateSummary ?? (0, 0, 0)
+    }
+
+    var hasDuplicates: Bool {
+        !duplicateGroups.isEmpty
+    }
+
+    var formattedPotentialSavings: String {
+        ByteCountFormatter.string(fromByteCount: duplicateSummary.potentialSavings, countStyle: .file)
     }
 }

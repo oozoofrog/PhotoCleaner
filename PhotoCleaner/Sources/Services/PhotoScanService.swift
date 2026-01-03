@@ -6,7 +6,7 @@
 //
 
 import Photos
-import UIKit
+import CryptoKit
 
 /// 스캔 진행 상태
 struct ScanProgress: Sendable {
@@ -38,14 +38,36 @@ enum ScanPhase: Sendable {
 }
 
 /// 스캔 결과
-struct ScanResult {
+struct ScanResult: Sendable {
     let totalPhotos: Int
     let issues: [PhotoIssue]
     let summaries: [IssueSummary]
+    let duplicateGroups: [DuplicateGroup]
     let scannedAt: Date
+
+    init(
+        totalPhotos: Int,
+        issues: [PhotoIssue],
+        summaries: [IssueSummary],
+        duplicateGroups: [DuplicateGroup] = [],
+        scannedAt: Date
+    ) {
+        self.totalPhotos = totalPhotos
+        self.issues = issues
+        self.summaries = summaries
+        self.duplicateGroups = duplicateGroups
+        self.scannedAt = scannedAt
+    }
 
     var totalIssueCount: Int {
         issues.count
+    }
+
+    var duplicateSummary: (groupCount: Int, duplicateCount: Int, potentialSavings: Int64) {
+        let groupCount = duplicateGroups.count
+        let duplicateCount = duplicateGroups.reduce(0) { $0 + $1.count - 1 }  // 원본 제외
+        let potentialSavings = duplicateGroups.reduce(Int64(0)) { $0 + $1.potentialSavings }
+        return (groupCount, duplicateCount, potentialSavings)
     }
 
     func issues(for type: IssueType) -> [PhotoIssue] {
@@ -76,14 +98,11 @@ actor PhotoScanService {
 
     // MARK: - Public Methods
 
-    /// 전체 스캔 수행
     func scanAll(
         progressHandler: @escaping @MainActor @Sendable (ScanProgress) -> Void
     ) async throws -> ScanResult {
-        // 준비 단계
         await progressHandler(ScanProgress(phase: .preparing, current: 0, total: 0))
 
-        // 모든 사진 가져오기
         let fetchOptions = PHFetchOptions()
         fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
         let allAssets = PHAsset.fetchAssets(with: .image, options: fetchOptions)
@@ -91,40 +110,38 @@ actor PhotoScanService {
         let total = allAssets.count
         var issues: [PhotoIssue] = []
 
-        // 스캔 시작 - 비동기 처리로 변경
         let assets = convertToArray(allAssets)
 
         for (index, asset) in assets.enumerated() {
-            // 진행률 업데이트 (debouncing 적용)
             if shouldUpdateProgress(index: index) {
                 let progress = ScanProgress(phase: .scanning, current: index + 1, total: total)
                 await progressHandler(progress)
             }
 
-            // 문제 감지 (동기 - 이미지 로드 없이 메타데이터만 확인)
             let detectedIssues = detectIssues(for: asset)
             issues.append(contentsOf: detectedIssues)
         }
 
-        // 요약 생성
+        let duplicateResult = await scanExactDuplicates(assets: assets, progressHandler: progressHandler)
+        issues.append(contentsOf: duplicateResult.issues)
+
         let summaries = createSummaries(from: issues)
 
         let result = ScanResult(
             totalPhotos: total,
             issues: issues,
             summaries: summaries,
+            duplicateGroups: duplicateResult.groups,
             scannedAt: Date()
         )
 
         cachedResult = result
 
-        // 완료
         await progressHandler(ScanProgress(phase: .completed, current: total, total: total))
 
         return result
     }
 
-    /// 특정 유형만 스캔
     func scan(
         for issueTypes: [IssueType],
         progressHandler: @escaping @MainActor @Sendable (ScanProgress) -> Void
@@ -134,7 +151,6 @@ actor PhotoScanService {
         let fetchOptions = PHFetchOptions()
         fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
 
-        // 스크린샷만 스캔할 경우 최적화
         if issueTypes == [.screenshot] {
             fetchOptions.predicate = NSPredicate(
                 format: "(mediaSubtypes & %d) != 0",
@@ -145,8 +161,10 @@ actor PhotoScanService {
         let allAssets = PHAsset.fetchAssets(with: .image, options: fetchOptions)
         let total = allAssets.count
         var issues: [PhotoIssue] = []
+        var duplicateGroups: [DuplicateGroup] = []
 
         let assets = convertToArray(allAssets)
+        let metadataTypes = issueTypes.filter { $0 != .duplicate }
 
         for (index, asset) in assets.enumerated() {
             if shouldUpdateProgress(index: index) {
@@ -154,9 +172,14 @@ actor PhotoScanService {
                 await progressHandler(progress)
             }
 
-            // 문제 감지 (동기 - 이미지 로드 없이 메타데이터만 확인)
-            let detectedIssues = detectIssues(for: asset, types: issueTypes)
+            let detectedIssues = detectIssues(for: asset, types: metadataTypes)
             issues.append(contentsOf: detectedIssues)
+        }
+
+        if issueTypes.contains(.duplicate) {
+            let duplicateResult = await scanExactDuplicates(assets: assets, progressHandler: progressHandler)
+            issues.append(contentsOf: duplicateResult.issues)
+            duplicateGroups = duplicateResult.groups
         }
 
         let summaries = createSummaries(from: issues)
@@ -165,6 +188,7 @@ actor PhotoScanService {
             totalPhotos: total,
             issues: issues,
             summaries: summaries,
+            duplicateGroups: duplicateGroups,
             scannedAt: Date()
         )
 
@@ -405,6 +429,153 @@ actor PhotoScanService {
         }
 
         return Array(summaryDict.values).sorted { $0.count > $1.count }
+    }
+
+    // MARK: - Duplicate Detection
+
+    private struct DuplicateCandidate: Sendable {
+        let assetId: String
+        let hashHex: String
+        let pixelWidth: Int
+        let pixelHeight: Int
+        let creationDate: Date?
+        let byteCount: Int64
+
+        var resolution: Int { pixelWidth * pixelHeight }
+    }
+
+    func scanExactDuplicates(
+        assets: [PHAsset],
+        progressHandler: @escaping @MainActor @Sendable (ScanProgress) -> Void
+    ) async -> (issues: [PhotoIssue], groups: [DuplicateGroup]) {
+        let total = assets.count
+        var hashToAssets: [String: [DuplicateCandidate]] = [:]
+        let concurrencyLimit = 4
+
+        for (index, asset) in assets.enumerated() {
+            if shouldUpdateProgress(index: index) {
+                await progressHandler(ScanProgress(
+                    phase: .scanning,
+                    current: index + 1,
+                    total: total,
+                    currentIssueType: .duplicate
+                ))
+            }
+
+            guard let result = await computeAssetHash(asset) else { continue }
+
+            let candidate = DuplicateCandidate(
+                assetId: asset.localIdentifier,
+                hashHex: result.hashHex,
+                pixelWidth: asset.pixelWidth,
+                pixelHeight: asset.pixelHeight,
+                creationDate: asset.creationDate,
+                byteCount: result.byteCount
+            )
+
+            hashToAssets[result.hashHex, default: []].append(candidate)
+        }
+
+        return createDuplicateResults(from: hashToAssets, assets: assets)
+    }
+
+    private func computeAssetHash(_ asset: PHAsset) async -> (hashHex: String, byteCount: Int64)? {
+        let resources = PHAssetResource.assetResources(for: asset)
+
+        let targetTypes: [PHAssetResourceType] = [.fullSizePhoto, .photo]
+        guard let resource = resources.first(where: { targetTypes.contains($0.type) }) else {
+            return nil
+        }
+
+        return await withCheckedContinuation { continuation in
+            var hasher = SHA256()
+            var byteCount: Int64 = 0
+            var hasResumed = false
+
+            let options = PHAssetResourceRequestOptions()
+            options.isNetworkAccessAllowed = false
+
+            PHAssetResourceManager.default().requestData(
+                for: resource,
+                options: options,
+                dataReceivedHandler: { data in
+                    hasher.update(data: data)
+                    byteCount += Int64(data.count)
+                },
+                completionHandler: { error in
+                    guard !hasResumed else { return }
+                    hasResumed = true
+
+                    if error != nil {
+                        continuation.resume(returning: nil)
+                        return
+                    }
+
+                    let digest = hasher.finalize()
+                    let hashHex = digest.map { String(format: "%02x", $0) }.joined()
+                    continuation.resume(returning: (hashHex, byteCount))
+                }
+            )
+        }
+    }
+
+    private nonisolated func createDuplicateResults(
+        from hashToAssets: [String: [DuplicateCandidate]],
+        assets: [PHAsset]
+    ) -> (issues: [PhotoIssue], groups: [DuplicateGroup]) {
+        var groups: [DuplicateGroup] = []
+        var issues: [PhotoIssue] = []
+
+        let assetMap = Dictionary(uniqueKeysWithValues: assets.map { ($0.localIdentifier, $0) })
+
+        for (hash, candidates) in hashToAssets where candidates.count >= 2 {
+            let sortedCandidates = selectOriginalFirst(candidates: candidates)
+            let originalId = sortedCandidates[0].assetId
+            let duplicateIds = sortedCandidates.dropFirst().map { $0.assetId }
+            let potentialSavings = sortedCandidates.dropFirst().reduce(Int64(0)) { $0 + $1.byteCount }
+
+            let group = DuplicateGroup(
+                id: "sha256:\(hash.prefix(16))",
+                assetIdentifiers: sortedCandidates.map { $0.assetId },
+                suggestedOriginalId: originalId,
+                similarity: 1.0,
+                potentialSavings: potentialSavings
+            )
+            groups.append(group)
+
+            for candidate in sortedCandidates.dropFirst() {
+                guard let asset = assetMap[candidate.assetId] else { continue }
+                let issue = PhotoIssue(
+                    asset: asset,
+                    issueType: .duplicate,
+                    severity: .info,
+                    metadata: IssueMetadata(
+                        fileSize: candidate.byteCount,
+                        duplicateGroupId: group.id
+                    )
+                )
+                issues.append(issue)
+            }
+        }
+
+        return (issues, groups)
+    }
+
+    private nonisolated func selectOriginalFirst(candidates: [DuplicateCandidate]) -> [DuplicateCandidate] {
+        candidates.sorted { lhs, rhs in
+            if lhs.resolution != rhs.resolution {
+                return lhs.resolution > rhs.resolution
+            }
+            if lhs.byteCount != rhs.byteCount {
+                return lhs.byteCount > rhs.byteCount
+            }
+            let lhsDate = lhs.creationDate ?? .distantFuture
+            let rhsDate = rhs.creationDate ?? .distantFuture
+            if lhsDate != rhsDate {
+                return lhsDate < rhsDate
+            }
+            return lhs.assetId < rhs.assetId
+        }
     }
 }
 
