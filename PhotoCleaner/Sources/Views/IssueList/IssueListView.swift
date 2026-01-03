@@ -430,6 +430,7 @@ struct PhotoThumbnailView: View {
     let isSelectionMode: Bool
     let onTap: () -> Void
 
+    @Environment(\.displayScale) private var displayScale
     @State private var thumbnail: UIImage?
     @State private var loadFailed = false
 
@@ -515,11 +516,9 @@ struct PhotoThumbnailView: View {
         options.isNetworkAccessAllowed = false     // 네트워크 로딩 없음 → 단일 콜백 보장
         options.resizeMode = .fast
 
-        // 자연 비율에 맞는 썸네일 크기 계산
-        let scale = UIScreen.main.scale
         let targetHeight = ThumbnailSize.gridHeight
         let targetWidth = targetHeight * issue.aspectRatio
-        let size = CGSize(width: targetWidth * scale, height: targetHeight * scale)
+        let size = CGSize(width: targetWidth * displayScale, height: targetHeight * displayScale)
 
         let result = await withCheckedContinuation { continuation in
             PHImageManager.default().requestImage(

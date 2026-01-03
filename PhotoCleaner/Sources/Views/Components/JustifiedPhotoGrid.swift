@@ -12,7 +12,7 @@ import SwiftUI
 
 /// 각 사진의 종횡비를 레이아웃에 전달하기 위한 키
 struct AspectRatioKey: LayoutValueKey {
-    nonisolated(unsafe) static let defaultValue: CGFloat = 1.0
+    nonisolated static let defaultValue: CGFloat = 1.0
 }
 
 extension View {
