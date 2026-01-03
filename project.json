@@ -19,11 +19,11 @@
     "phase": "development",
     "activeFeature": null,
     "lastSession": {
-      "date": "2026-01-03",
-      "summary": "전체 사진 그리드 UI 구현 - AllPhotosView, AssetThumbnailView, 대시보드 진입점",
+      "date": "2026-01-04",
+      "summary": "설정 화면 구현 + 전체 사진 그리드 UI - AppSettings, SettingsView, AllPhotosView",
       "nextSteps": [
+        "사진 상세 화면",
         "메타데이터 기반 중복 감지 (task-008, 선택적)",
-        "설정 화면 구현",
         "자동 검사 기능"
       ]
     },
@@ -260,6 +260,38 @@
         }
       ],
       "notes": "SummaryCard, IssueCard, DuplicateCard 구현 완료. 중복 그룹 수, 정리 가능 용량 표시"
+    },
+    {
+      "id": "feature-008",
+      "name": "설정 화면",
+      "description": "앱 설정 화면 - 검사 설정, 표시 설정, 데이터 관리",
+      "status": "completed",
+      "priority": "medium",
+      "dependencies": [],
+      "tasks": [
+        {
+          "id": "task-023",
+          "description": "AppSettings 모델 구현 (UserDefaults)",
+          "status": "completed",
+          "assignedDate": "2026-01-04",
+          "completedDate": "2026-01-04"
+        },
+        {
+          "id": "task-024",
+          "description": "SettingsView 구현",
+          "status": "completed",
+          "assignedDate": "2026-01-04",
+          "completedDate": "2026-01-04"
+        },
+        {
+          "id": "task-025",
+          "description": "대시보드에 설정 진입점 추가",
+          "status": "completed",
+          "assignedDate": "2026-01-04",
+          "completedDate": "2026-01-04"
+        }
+      ],
+      "notes": "AppSettings(@Observable), SettingsView 구현 완료. 검사설정, 표시설정, 데이터 관리, 앱 정보 섹션 포함"
     }
   ],
   "issues": [],
@@ -449,6 +481,27 @@
         "Vision perform() 블로킹 → DispatchQueue.global 분리",
         "Continuation 다중 resume 방지 - NSLock + isDegraded 체크",
         "AGENTS.md 생성 - 빌드/테스트 명령어, 코드 스타일 가이드"
+      ]
+    },
+    {
+      "date": "2026-01-03",
+      "version": "0.3.1",
+      "changes": [
+        "AllPhotosView - 전체 사진 그리드 UI",
+        "AssetThumbnailView - PHAsset 썸네일 컴포넌트",
+        "대시보드에서 전체 사진 진입점 추가"
+      ]
+    },
+    {
+      "date": "2026-01-04",
+      "version": "0.4.0",
+      "changes": [
+        "설정 화면 구현 (feature-008)",
+        "AppSettings 모델 - UserDefaults 연동",
+        "SettingsView - 검사/표시/데이터 설정",
+        "대시보드 네비게이션 바에 설정 버튼 추가",
+        "DuplicateDetectionMode, SimilarityThreshold, ThumbnailSize, SortOrder enum 추가",
+        "DashboardViewModel.clearCache() 메서드 추가"
       ]
     }
   ],

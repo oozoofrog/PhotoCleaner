@@ -10,6 +10,7 @@ import SwiftUI
 struct DashboardView: View {
     @Bindable var viewModel: DashboardViewModel
     @State private var selectedIssueType: IssueType?
+    @State private var showSettings = false
     @State private var showAllPhotos = false
 
     var body: some View {
@@ -32,8 +33,25 @@ struct DashboardView: View {
                 }
             }
             .navigationTitle("PhotoCleaner")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                }
+            }
             .navigationDestination(item: $selectedIssueType) { issueType in
                 issueListView(for: issueType)
+            }
+            .navigationDestination(isPresented: $showSettings) {
+                SettingsView(
+                    settings: AppSettings.shared,
+                    onClearCache: {
+                        Task { await viewModel.clearCache() }
+                    }
+                )
             }
             .navigationDestination(isPresented: $showAllPhotos) {
                 AllPhotosView()
