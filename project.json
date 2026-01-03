@@ -6,10 +6,11 @@
     "startDate": "2026-01-01",
     "lastUpdated": "2026-01-02",
     "techStack": [
-      "Swift 5.0",
+      "Swift 6",
       "SwiftUI",
       "Swift Concurrency",
-      "PhotoKit"
+      "PhotoKit",
+      "Vision"
     ],
     "repository": "https://github.com/oozoofrog/PhotoCleaner",
     "bundleId": "com.oozoofrog.app.PhotoCleaner"
@@ -19,15 +20,13 @@
     "activeFeature": null,
     "lastSession": {
       "date": "2026-01-04",
-      "summary": "설정 화면 구현 - AppSettings, SettingsView, 대시보드 설정 버튼",
+      "summary": "설정 화면 구현 + 전체 사진 그리드 UI - AppSettings, SettingsView, AllPhotosView",
       "nextSteps": [
+        "사진 상세 화면",
         "메타데이터 기반 중복 감지 (task-008, 선택적)",
-        "자동 검사 기능",
-        "사진 상세 화면"
+        "자동 검사 기능"
       ]
     },
-    "blockers": []
-  },
     "blockers": []
   },
   "features": [
@@ -35,7 +34,7 @@
       "id": "feature-001",
       "name": "사진첩 접근 및 표시",
       "description": "PhotoKit을 사용하여 사진첩에 접근하고 사진 목록을 표시",
-      "status": "in_progress",
+      "status": "completed",
       "priority": "high",
       "dependencies": [],
       "tasks": [
@@ -56,12 +55,12 @@
         {
           "id": "task-003",
           "description": "사진 그리드 UI 구현",
-          "status": "todo",
-          "assignedDate": null,
-          "completedDate": null
+          "status": "completed",
+          "assignedDate": "2026-01-03",
+          "completedDate": "2026-01-03"
         }
       ],
-      "notes": "PhotoPermissionService, PhotoScanService 구현 완료. 전체 사진 그리드는 별도 화면으로 구현 예정"
+      "notes": "PhotoPermissionService, PhotoScanService, AllPhotosView 구현 완료. 대시보드에서 전체 사진으로 이동 가능"
     },
     {
       "id": "feature-002",
@@ -99,7 +98,7 @@
       "id": "feature-003",
       "name": "중복 사진 감지",
       "description": "동일하거나 유사한 사진을 감지하여 정리",
-      "status": "in_progress",
+      "status": "completed",
       "priority": "medium",
       "dependencies": ["feature-001"],
       "tasks": [
@@ -123,9 +122,16 @@
           "status": "completed",
           "assignedDate": "2026-01-03",
           "completedDate": "2026-01-03"
+        },
+        {
+          "id": "task-022",
+          "description": "Vision pHash 유사 사진 감지",
+          "status": "completed",
+          "assignedDate": "2026-01-03",
+          "completedDate": "2026-01-03"
         }
       ],
-      "notes": "SHA256 해시 기반 완전 동일 중복 감지 구현 완료. 대시보드에 중복 카드 섹션 추가. 유사 사진 감지(Phase 2)는 미구현"
+      "notes": "SHA256 해시 기반 완전 동일 + Vision pHash 유사 사진 감지 완료. 메타데이터 버킷팅으로 O(n²) 최적화. 대시보드에 중복 카드 섹션 추가"
     },
     {
       "id": "feature-004",
@@ -163,7 +169,7 @@
       "id": "feature-005",
       "name": "스크린샷 정리",
       "description": "스크린샷만 모아서 일괄 관리 및 삭제",
-      "status": "in_progress",
+      "status": "completed",
       "priority": "high",
       "dependencies": ["feature-001"],
       "tasks": [
@@ -177,34 +183,34 @@
         {
           "id": "task-014",
           "description": "날짜별 그룹핑 UI",
-          "status": "todo",
-          "assignedDate": null,
-          "completedDate": null
+          "status": "completed",
+          "assignedDate": "2026-01-03",
+          "completedDate": "2026-01-03"
         },
         {
           "id": "task-015",
           "description": "스마트 필터 (오늘/이번주/오래된것)",
-          "status": "todo",
-          "assignedDate": null,
-          "completedDate": null
+          "status": "completed",
+          "assignedDate": "2026-01-03",
+          "completedDate": "2026-01-03"
         }
       ],
-      "notes": "detectScreenshot 구현 완료. 그룹핑/필터 UI 추가 필요"
+      "notes": "detectScreenshot + DateFilter 날짜별 필터 UI 구현 완료 (전체/오늘/이번주/이번달/오래된것)"
     },
     {
       "id": "feature-006",
       "name": "대용량 파일 감지",
       "description": "설정된 크기 이상의 파일 감지 및 관리",
-      "status": "in_progress",
+      "status": "completed",
       "priority": "medium",
       "dependencies": ["feature-001"],
       "tasks": [
         {
           "id": "task-016",
           "description": "파일 크기 기준 설정 UI",
-          "status": "todo",
-          "assignedDate": null,
-          "completedDate": null
+          "status": "completed",
+          "assignedDate": "2026-01-03",
+          "completedDate": "2026-01-03"
         },
         {
           "id": "task-017",
@@ -216,12 +222,12 @@
         {
           "id": "task-018",
           "description": "크기순 정렬 목록 UI",
-          "status": "todo",
-          "assignedDate": null,
-          "completedDate": null
+          "status": "completed",
+          "assignedDate": "2026-01-03",
+          "completedDate": "2026-01-03"
         }
       ],
-      "notes": "detectLargeFile 구현 완료 (기본 10MB). 설정 UI 추가 필요"
+      "notes": "LargeFileSizeOption (5/10/25/50/100MB) + largeFileSizeFilterPicker UI + 크기순 내림차순 정렬 구현 완료"
     },
     {
       "id": "feature-007",
@@ -248,12 +254,12 @@
         {
           "id": "task-021",
           "description": "중복 사진 요약 카드",
-          "status": "todo",
-          "assignedDate": null,
-          "completedDate": null
+          "status": "completed",
+          "assignedDate": "2026-01-03",
+          "completedDate": "2026-01-03"
         }
       ],
-      "notes": "SummaryCard, IssueCard 구현 완료. 중복 요약 카드는 feature-003 완료 후 추가"
+      "notes": "SummaryCard, IssueCard, DuplicateCard 구현 완료. 중복 그룹 수, 정리 가능 용량 표시"
     },
     {
       "id": "feature-008",
@@ -464,14 +470,26 @@
       "date": "2026-01-03",
       "version": "0.3.0",
       "changes": [
-        "Vision pHash 기반 유사 사진 감지",
-        "메타데이터 버킷팅으로 O(n²) 최적화",
-        "LargeFileSizeOption enum (5/10/25/50/100MB)",
-        "대용량 파일 크기 설정 UI",
+        "PR #5 머지 - 사진 스캔 기능 강화",
+        "Vision pHash 기반 유사 사진 감지 (VNGenerateImageFeaturePrintRequest)",
+        "메타데이터 버킷팅으로 유사 사진 비교 O(n²) 최적화",
+        "LargeFileSizeOption enum (5/10/25/50/100MB 선택)",
+        "대용량 파일 크기 설정 UI (largeFileSizeFilterPicker)",
+        "대용량 파일 크기순 내림차순 정렬",
         "스크린샷 DateFilter (전체/오늘/이번주/이번달/오래된것)",
+        "Actor 프로퍼티 동기 접근 제거 - ViewModel 자체 상태 관리",
+        "Vision perform() 블로킹 → DispatchQueue.global 분리",
+        "Continuation 다중 resume 방지 - NSLock + isDegraded 체크",
+        "AGENTS.md 생성 - 빌드/테스트 명령어, 코드 스타일 가이드"
+      ]
+    },
+    {
+      "date": "2026-01-03",
+      "version": "0.3.1",
+      "changes": [
         "AllPhotosView - 전체 사진 그리드 UI",
         "AssetThumbnailView - PHAsset 썸네일 컴포넌트",
-        "AGENTS.md 생성"
+        "대시보드에서 전체 사진 진입점 추가"
       ]
     },
     {

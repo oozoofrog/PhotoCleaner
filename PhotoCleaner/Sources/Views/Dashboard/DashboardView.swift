@@ -11,6 +11,7 @@ struct DashboardView: View {
     @Bindable var viewModel: DashboardViewModel
     @State private var selectedIssueType: IssueType?
     @State private var showSettings = false
+    @State private var showAllPhotos = false
 
     var body: some View {
         NavigationStack {
@@ -52,6 +53,9 @@ struct DashboardView: View {
                     }
                 )
             }
+            .navigationDestination(isPresented: $showAllPhotos) {
+                AllPhotosView()
+            }
         }
     }
 
@@ -83,15 +87,18 @@ struct DashboardView: View {
     private var dashboardContent: some View {
         ScrollView {
             VStack(spacing: Spacing.lg) {
-                // 전체 요약 카드
                 SummaryCard(
                     totalPhotos: viewModel.totalPhotoCount,
                     totalIssues: viewModel.totalIssueCount,
                     lastScanDate: viewModel.formattedLastScanDate,
-                    isScanning: viewModel.isScanning
-                ) {
-                    Task { await viewModel.startScan() }
-                }
+                    isScanning: viewModel.isScanning,
+                    onScan: {
+                        Task { await viewModel.startScan() }
+                    },
+                    onViewAllPhotos: {
+                        showAllPhotos = true
+                    }
+                )
 
                 if viewModel.hasScanned {
                     issueCardsSection
@@ -201,10 +208,10 @@ struct SummaryCard: View {
     let lastScanDate: String?
     let isScanning: Bool
     let onScan: () -> Void
+    var onViewAllPhotos: (() -> Void)?
 
     var body: some View {
         VStack(spacing: Spacing.md) {
-            // 상단 정보
             HStack {
                 VStack(alignment: .leading, spacing: Spacing.xs) {
                     Text("전체 요약")
@@ -212,9 +219,22 @@ struct SummaryCard: View {
                         .foregroundStyle(AppColor.textSecondary)
 
                     if totalPhotos > 0 {
-                        Text("\(totalPhotos.formatted())장 중 \(totalIssues)장에 문제 발견")
-                            .font(Typography.headline)
-                            .foregroundStyle(AppColor.textPrimary)
+                        Button {
+                            onViewAllPhotos?()
+                        } label: {
+                            HStack(spacing: Spacing.xs) {
+                                Text("\(totalPhotos.formatted())장")
+                                    .font(Typography.headline)
+                                    .foregroundStyle(AppColor.primary)
+                                Text("중 \(totalIssues)장에 문제 발견")
+                                    .font(Typography.headline)
+                                    .foregroundStyle(AppColor.textPrimary)
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: IconSize.xs))
+                                    .foregroundStyle(AppColor.textTertiary)
+                            }
+                        }
+                        .buttonStyle(.plain)
                     } else {
                         Text("검사를 시작해 주세요")
                             .font(Typography.headline)
@@ -230,7 +250,6 @@ struct SummaryCard: View {
 
                 Spacer()
 
-                // 문제 개수 배지
                 if totalIssues > 0 {
                     Text("\(totalIssues)")
                         .font(Typography.largeNumber)
@@ -238,7 +257,6 @@ struct SummaryCard: View {
                 }
             }
 
-            // 검사 버튼
             Button(action: onScan) {
                 HStack {
                     Image(systemName: "magnifyingglass")
