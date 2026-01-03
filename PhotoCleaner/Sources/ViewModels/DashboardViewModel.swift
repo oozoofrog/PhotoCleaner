@@ -208,4 +208,10 @@ final class DashboardViewModel {
             scannedAt: existingResult.scannedAt
         )
     }
+
+    func clearCache() async {
+        await scanService.clearCache()
+        scanResult = nil
+        lastScanDate = nil
+    }
 }

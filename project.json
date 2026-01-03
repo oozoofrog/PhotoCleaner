@@ -16,16 +16,18 @@
   },
   "currentStatus": {
     "phase": "development",
-    "activeFeature": "feature-003",
+    "activeFeature": null,
     "lastSession": {
-      "date": "2026-01-03",
-      "summary": "중복 사진 감지 기능 Phase 1 구현 - SHA256 해시 기반 완전 동일 감지, 원본 자동 선택, 대시보드 중복 카드 섹션",
+      "date": "2026-01-04",
+      "summary": "설정 화면 구현 - AppSettings, SettingsView, 대시보드 설정 버튼",
       "nextSteps": [
-        "유사 사진 감지 구현 (Vision pHash)",
-        "스크린샷 날짜별 그룹핑 UI",
-        "대용량 파일 크기 설정 UI"
+        "메타데이터 기반 중복 감지 (task-008, 선택적)",
+        "자동 검사 기능",
+        "사진 상세 화면"
       ]
     },
+    "blockers": []
+  },
     "blockers": []
   },
   "features": [
@@ -252,6 +254,38 @@
         }
       ],
       "notes": "SummaryCard, IssueCard 구현 완료. 중복 요약 카드는 feature-003 완료 후 추가"
+    },
+    {
+      "id": "feature-008",
+      "name": "설정 화면",
+      "description": "앱 설정 화면 - 검사 설정, 표시 설정, 데이터 관리",
+      "status": "completed",
+      "priority": "medium",
+      "dependencies": [],
+      "tasks": [
+        {
+          "id": "task-023",
+          "description": "AppSettings 모델 구현 (UserDefaults)",
+          "status": "completed",
+          "assignedDate": "2026-01-04",
+          "completedDate": "2026-01-04"
+        },
+        {
+          "id": "task-024",
+          "description": "SettingsView 구현",
+          "status": "completed",
+          "assignedDate": "2026-01-04",
+          "completedDate": "2026-01-04"
+        },
+        {
+          "id": "task-025",
+          "description": "대시보드에 설정 진입점 추가",
+          "status": "completed",
+          "assignedDate": "2026-01-04",
+          "completedDate": "2026-01-04"
+        }
+      ],
+      "notes": "AppSettings(@Observable), SettingsView 구현 완료. 검사설정, 표시설정, 데이터 관리, 앱 정보 섹션 포함"
     }
   ],
   "issues": [],
@@ -424,6 +458,32 @@
         "DuplicateGroup 모델 활용 및 ScanResult 확장",
         "대시보드에 중복 사진 카드 섹션 추가",
         "DuplicateDetectionTests 테스트 케이스 추가"
+      ]
+    },
+    {
+      "date": "2026-01-03",
+      "version": "0.3.0",
+      "changes": [
+        "Vision pHash 기반 유사 사진 감지",
+        "메타데이터 버킷팅으로 O(n²) 최적화",
+        "LargeFileSizeOption enum (5/10/25/50/100MB)",
+        "대용량 파일 크기 설정 UI",
+        "스크린샷 DateFilter (전체/오늘/이번주/이번달/오래된것)",
+        "AllPhotosView - 전체 사진 그리드 UI",
+        "AssetThumbnailView - PHAsset 썸네일 컴포넌트",
+        "AGENTS.md 생성"
+      ]
+    },
+    {
+      "date": "2026-01-04",
+      "version": "0.4.0",
+      "changes": [
+        "설정 화면 구현 (feature-008)",
+        "AppSettings 모델 - UserDefaults 연동",
+        "SettingsView - 검사/표시/데이터 설정",
+        "대시보드 네비게이션 바에 설정 버튼 추가",
+        "DuplicateDetectionMode, SimilarityThreshold, ThumbnailSize, SortOrder enum 추가",
+        "DashboardViewModel.clearCache() 메서드 추가"
       ]
     }
   ],
