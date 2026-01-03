@@ -16,14 +16,14 @@
   },
   "currentStatus": {
     "phase": "development",
-    "activeFeature": "feature-003",
+    "activeFeature": "feature-009",
     "lastSession": {
-      "date": "2026-01-03",
-      "summary": "중복 사진 감지 기능 Phase 1 구현 - SHA256 해시 기반 완전 동일 감지, 원본 자동 선택, 대시보드 중복 카드 섹션",
+      "date": "2026-01-04",
+      "summary": "사진 상세 화면 구현 - PhotoDetailView, PhotoMetadataSheet, IssueListView에서 네비게이션 연결",
       "nextSteps": [
+        "AllPhotosView에서 상세 화면 네비게이션 추가",
         "유사 사진 감지 구현 (Vision pHash)",
-        "스크린샷 날짜별 그룹핑 UI",
-        "대용량 파일 크기 설정 UI"
+        "스크린샷 날짜별 그룹핑 UI"
       ]
     },
     "blockers": []
@@ -252,6 +252,38 @@
         }
       ],
       "notes": "SummaryCard, IssueCard 구현 완료. 중복 요약 카드는 feature-003 완료 후 추가"
+    },
+    {
+      "id": "feature-009",
+      "name": "사진 상세 화면",
+      "description": "사진 전체 화면 보기, 메타데이터 표시, 삭제 기능",
+      "status": "completed",
+      "priority": "high",
+      "dependencies": ["feature-001", "feature-002"],
+      "tasks": [
+        {
+          "id": "task-022",
+          "description": "PhotoDetailView 구현",
+          "status": "completed",
+          "assignedDate": "2026-01-04",
+          "completedDate": "2026-01-04"
+        },
+        {
+          "id": "task-023",
+          "description": "PhotoMetadataSheet 구현",
+          "status": "completed",
+          "assignedDate": "2026-01-04",
+          "completedDate": "2026-01-04"
+        },
+        {
+          "id": "task-024",
+          "description": "IssueListView 네비게이션 연결",
+          "status": "completed",
+          "assignedDate": "2026-01-04",
+          "completedDate": "2026-01-04"
+        }
+      ],
+      "notes": "문제 사진 목록에서 탭 시 상세 화면으로 이동. 메타데이터 시트에서 문제 정보 및 사진 정보 표시"
     }
   ],
   "issues": [],
@@ -318,6 +350,11 @@
       {
         "name": "IssueListView",
         "responsibility": "문제 사진 목록 표시 및 선택/삭제 UI",
+        "dependencies": ["PhotoIssue"]
+      },
+      {
+        "name": "PhotoDetailView",
+        "responsibility": "사진 전체 화면 보기, 메타데이터 표시, 삭제 기능",
         "dependencies": ["PhotoIssue"]
       },
       {
@@ -424,6 +461,16 @@
         "DuplicateGroup 모델 활용 및 ScanResult 확장",
         "대시보드에 중복 사진 카드 섹션 추가",
         "DuplicateDetectionTests 테스트 케이스 추가"
+      ]
+    },
+    {
+      "date": "2026-01-04",
+      "version": "0.3.0",
+      "changes": [
+        "사진 상세 화면 구현 (PhotoDetailView)",
+        "전체 화면 사진 보기 및 삭제 기능",
+        "PhotoMetadataSheet - 문제 정보 및 사진 메타데이터 표시",
+        "IssueListView에서 상세 화면 네비게이션 연결"
       ]
     }
   ],
