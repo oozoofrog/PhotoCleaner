@@ -166,4 +166,13 @@ final class DashboardViewModel {
     var formattedPotentialSavings: String {
         ByteCountFormatter.string(fromByteCount: duplicateSummary.potentialSavings, countStyle: .file)
     }
+
+    var currentLargeFileSizeOption: LargeFileSizeOption {
+        LargeFileSizeOption.allCases.first { $0.bytes == scanService.largeFileThreshold } ?? .mb10
+    }
+
+    func setLargeFileThreshold(_ option: LargeFileSizeOption) async {
+        await scanService.setLargeFileThreshold(option)
+        await startScan()
+    }
 }

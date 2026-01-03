@@ -7,6 +7,8 @@
 
 import Photos
 import CryptoKit
+import Vision
+import UIKit
 
 /// 스캔 진행 상태
 struct ScanProgress: Sendable {
@@ -84,17 +86,19 @@ actor PhotoScanService {
 
     // MARK: - Constants
 
-    /// 진행률 업데이트 간격 (항목 수)
     private nonisolated static let progressUpdateInterval: Int = 100
-    /// 대용량 파일 기준 (bytes) - 10MB
-    private nonisolated static let largeFileThreshold: Int64 = 10 * 1024 * 1024
-    /// 진행률 업데이트 최소 시간 간격 (초)
     private nonisolated static let progressDebounceInterval: TimeInterval = 0.1
 
     // MARK: - Properties
 
     private var cachedResult: ScanResult?
     private var lastProgressUpdate: Date = .distantPast
+    private(set) var largeFileThreshold: Int64 = LargeFileSizeOption.mb10.bytes
+
+    func setLargeFileThreshold(_ threshold: LargeFileSizeOption) {
+        largeFileThreshold = threshold.bytes
+        cachedResult = nil
+    }
 
     // MARK: - Public Methods
 
@@ -111,6 +115,7 @@ actor PhotoScanService {
         var issues: [PhotoIssue] = []
 
         let assets = convertToArray(allAssets)
+        let threshold = largeFileThreshold
 
         for (index, asset) in assets.enumerated() {
             if shouldUpdateProgress(index: index) {
@@ -118,12 +123,19 @@ actor PhotoScanService {
                 await progressHandler(progress)
             }
 
-            let detectedIssues = detectIssues(for: asset)
+            let detectedIssues = detectIssues(for: asset, largeFileThreshold: threshold)
             issues.append(contentsOf: detectedIssues)
         }
 
         let duplicateResult = await scanExactDuplicates(assets: assets, progressHandler: progressHandler)
         issues.append(contentsOf: duplicateResult.issues)
+
+        let exactDuplicateAssetIds = Set(duplicateResult.groups.flatMap { $0.assetIdentifiers })
+        let remainingAssets = assets.filter { !exactDuplicateAssetIds.contains($0.localIdentifier) }
+        let similarResult = await scanSimilarPhotos(assets: remainingAssets, progressHandler: progressHandler)
+        issues.append(contentsOf: similarResult.issues)
+
+        let allDuplicateGroups = duplicateResult.groups + similarResult.groups
 
         let summaries = createSummaries(from: issues)
 
@@ -131,7 +143,7 @@ actor PhotoScanService {
             totalPhotos: total,
             issues: issues,
             summaries: summaries,
-            duplicateGroups: duplicateResult.groups,
+            duplicateGroups: allDuplicateGroups,
             scannedAt: Date()
         )
 
@@ -165,6 +177,7 @@ actor PhotoScanService {
 
         let assets = convertToArray(allAssets)
         let metadataTypes = issueTypes.filter { $0 != .duplicate }
+        let threshold = largeFileThreshold
 
         for (index, asset) in assets.enumerated() {
             if shouldUpdateProgress(index: index) {
@@ -172,7 +185,7 @@ actor PhotoScanService {
                 await progressHandler(progress)
             }
 
-            let detectedIssues = detectIssues(for: asset, types: metadataTypes)
+            let detectedIssues = detectIssues(for: asset, types: metadataTypes, largeFileThreshold: threshold)
             issues.append(contentsOf: detectedIssues)
         }
 
@@ -180,6 +193,12 @@ actor PhotoScanService {
             let duplicateResult = await scanExactDuplicates(assets: assets, progressHandler: progressHandler)
             issues.append(contentsOf: duplicateResult.issues)
             duplicateGroups = duplicateResult.groups
+
+            let exactDuplicateAssetIds = Set(duplicateResult.groups.flatMap { $0.assetIdentifiers })
+            let remainingAssets = assets.filter { !exactDuplicateAssetIds.contains($0.localIdentifier) }
+            let similarResult = await scanSimilarPhotos(assets: remainingAssets, progressHandler: progressHandler)
+            issues.append(contentsOf: similarResult.issues)
+            duplicateGroups.append(contentsOf: similarResult.groups)
         }
 
         let summaries = createSummaries(from: issues)
@@ -238,16 +257,16 @@ actor PhotoScanService {
 
     // MARK: - Issue Detection
 
-    /// 문제 감지 (동기 - PHAssetResource 기반으로 빠름)
     private nonisolated func detectIssues(
         for asset: PHAsset,
-        types: [IssueType]? = nil
+        types: [IssueType]? = nil,
+        largeFileThreshold: Int64 = LargeFileSizeOption.mb10.bytes
     ) -> [PhotoIssue] {
         let targetTypes = types ?? IssueType.allCases
         var issues: [PhotoIssue] = []
 
         for type in targetTypes {
-            if let issue = detectIssue(for: asset, type: type) {
+            if let issue = detectIssue(for: asset, type: type, largeFileThreshold: largeFileThreshold) {
                 issues.append(issue)
             }
         }
@@ -255,7 +274,11 @@ actor PhotoScanService {
         return issues
     }
 
-    private nonisolated func detectIssue(for asset: PHAsset, type: IssueType) -> PhotoIssue? {
+    private nonisolated func detectIssue(
+        for asset: PHAsset,
+        type: IssueType,
+        largeFileThreshold: Int64 = LargeFileSizeOption.mb10.bytes
+    ) -> PhotoIssue? {
         switch type {
         case .downloadFailed:
             return detectDownloadFailure(for: asset)
@@ -264,9 +287,8 @@ actor PhotoScanService {
         case .corrupted:
             return detectCorruption(for: asset)
         case .largeFile:
-            return detectLargeFile(for: asset)
+            return detectLargeFile(for: asset, threshold: largeFileThreshold)
         case .duplicate:
-            // TODO: Phase 2에서 구현 예정 - 해시 기반 중복 감지
             return nil
         }
     }
@@ -381,12 +403,11 @@ actor PhotoScanService {
         return nil
     }
 
-    /// 대용량 파일 감지 (픽셀 기반 추정)
-    private nonisolated func detectLargeFile(for asset: PHAsset) -> PhotoIssue? {
+    private nonisolated func detectLargeFile(for asset: PHAsset, threshold: Int64) -> PhotoIssue? {
         let estimatedSize = estimateFileSize(for: asset)
 
         guard let fileSize = estimatedSize,
-              fileSize >= Self.largeFileThreshold else {
+              fileSize >= threshold else {
             return nil
         }
 
@@ -563,6 +584,201 @@ actor PhotoScanService {
 
     private nonisolated func selectOriginalFirst(candidates: [DuplicateCandidate]) -> [DuplicateCandidate] {
         candidates.sorted { lhs, rhs in
+            if lhs.resolution != rhs.resolution {
+                return lhs.resolution > rhs.resolution
+            }
+            if lhs.byteCount != rhs.byteCount {
+                return lhs.byteCount > rhs.byteCount
+            }
+            let lhsDate = lhs.creationDate ?? .distantFuture
+            let rhsDate = rhs.creationDate ?? .distantFuture
+            if lhsDate != rhsDate {
+                return lhsDate < rhsDate
+            }
+            return lhs.assetId < rhs.assetId
+        }
+    }
+
+    // MARK: - Similar Photo Detection (Vision pHash)
+
+    private struct FeaturePrintCandidate {
+        let assetId: String
+        let featurePrint: VNFeaturePrintObservation
+        let pixelWidth: Int
+        let pixelHeight: Int
+        let creationDate: Date?
+        let byteCount: Int64
+
+        var resolution: Int { pixelWidth * pixelHeight }
+    }
+
+    func scanSimilarPhotos(
+        assets: [PHAsset],
+        similarityThreshold: Float = 0.95,
+        progressHandler: @escaping @MainActor @Sendable (ScanProgress) -> Void
+    ) async -> (issues: [PhotoIssue], groups: [DuplicateGroup]) {
+        let total = assets.count
+        var candidates: [FeaturePrintCandidate] = []
+
+        for (index, asset) in assets.enumerated() {
+            if shouldUpdateProgress(index: index) {
+                await progressHandler(ScanProgress(
+                    phase: .scanning,
+                    current: index + 1,
+                    total: total,
+                    currentIssueType: .duplicate
+                ))
+            }
+
+            guard let result = await computeFeaturePrint(for: asset) else { continue }
+
+            let candidate = FeaturePrintCandidate(
+                assetId: asset.localIdentifier,
+                featurePrint: result.featurePrint,
+                pixelWidth: asset.pixelWidth,
+                pixelHeight: asset.pixelHeight,
+                creationDate: asset.creationDate,
+                byteCount: result.byteCount
+            )
+            candidates.append(candidate)
+        }
+
+        let assetMap = Dictionary(uniqueKeysWithValues: assets.map { ($0.localIdentifier, $0) })
+        return groupSimilarCandidates(candidates, threshold: similarityThreshold, assetMap: assetMap)
+    }
+
+    private func computeFeaturePrint(for asset: PHAsset) async -> (featurePrint: VNFeaturePrintObservation, byteCount: Int64)? {
+        let imageResult = await loadThumbnailImage(for: asset, targetSize: CGSize(width: 300, height: 300))
+        guard let cgImage = imageResult.image else { return nil }
+
+        let request = VNGenerateImageFeaturePrintRequest()
+        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+
+        do {
+            try handler.perform([request])
+            guard let observation = request.results?.first else { return nil }
+            return (observation, imageResult.byteCount)
+        } catch {
+            return nil
+        }
+    }
+
+    private func loadThumbnailImage(for asset: PHAsset, targetSize: CGSize) async -> (image: CGImage?, byteCount: Int64) {
+        await withCheckedContinuation { continuation in
+            let options = PHImageRequestOptions()
+            options.deliveryMode = .fastFormat
+            options.isNetworkAccessAllowed = false
+            options.resizeMode = .fast
+            options.isSynchronous = false
+
+            let scale = UIScreen.main.scale
+            let size = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
+
+            PHImageManager.default().requestImage(
+                for: asset,
+                targetSize: size,
+                contentMode: .aspectFill,
+                options: options
+            ) { image, info in
+                let byteCount = Int64(asset.pixelWidth * asset.pixelHeight) / 4
+                continuation.resume(returning: (image?.cgImage, byteCount))
+            }
+        }
+    }
+
+    private nonisolated func groupSimilarCandidates(
+        _ candidates: [FeaturePrintCandidate],
+        threshold: Float,
+        assetMap: [String: PHAsset]
+    ) -> (issues: [PhotoIssue], groups: [DuplicateGroup]) {
+        guard candidates.count >= 2 else { return ([], []) }
+
+        var parent = Array(0..<candidates.count)
+        var rank = Array(repeating: 0, count: candidates.count)
+
+        func find(_ x: Int) -> Int {
+            if parent[x] != x {
+                parent[x] = find(parent[x])
+            }
+            return parent[x]
+        }
+
+        func union(_ x: Int, _ y: Int) {
+            let px = find(x)
+            let py = find(y)
+            guard px != py else { return }
+
+            if rank[px] < rank[py] {
+                parent[px] = py
+            } else if rank[px] > rank[py] {
+                parent[py] = px
+            } else {
+                parent[py] = px
+                rank[px] += 1
+            }
+        }
+
+        let distanceThreshold = 1.0 - threshold
+
+        for i in 0..<candidates.count {
+            for j in (i + 1)..<candidates.count {
+                var distance: Float = 0
+                do {
+                    try candidates[i].featurePrint.computeDistance(&distance, to: candidates[j].featurePrint)
+                    if distance <= distanceThreshold {
+                        union(i, j)
+                    }
+                } catch {
+                    continue
+                }
+            }
+        }
+
+        var groupMap: [Int: [Int]] = [:]
+        for i in 0..<candidates.count {
+            let root = find(i)
+            groupMap[root, default: []].append(i)
+        }
+
+        var groups: [DuplicateGroup] = []
+        var issues: [PhotoIssue] = []
+
+        for (_, memberIndices) in groupMap where memberIndices.count >= 2 {
+            let members = memberIndices.map { candidates[$0] }
+            let sortedMembers = sortByOriginalPriority(members)
+            let originalId = sortedMembers[0].assetId
+            let potentialSavings = sortedMembers.dropFirst().reduce(Int64(0)) { $0 + $1.byteCount }
+
+            let groupId = "similar:\(UUID().uuidString.prefix(8))"
+            let group = DuplicateGroup(
+                id: groupId,
+                assetIdentifiers: sortedMembers.map { $0.assetId },
+                suggestedOriginalId: originalId,
+                similarity: Double(threshold),
+                potentialSavings: potentialSavings
+            )
+            groups.append(group)
+
+            for member in sortedMembers.dropFirst() {
+                guard let asset = assetMap[member.assetId] else { continue }
+                let issue = PhotoIssue(
+                    asset: asset,
+                    issueType: .duplicate,
+                    severity: .info,
+                    metadata: IssueMetadata(
+                        fileSize: member.byteCount,
+                        duplicateGroupId: groupId
+                    )
+                )
+                issues.append(issue)
+            }
+        }
+
+        return (issues, groups)
+    }
+
+    private nonisolated func sortByOriginalPriority(_ members: [FeaturePrintCandidate]) -> [FeaturePrintCandidate] {
+        members.sorted { lhs, rhs in
             if lhs.resolution != rhs.resolution {
                 return lhs.resolution > rhs.resolution
             }

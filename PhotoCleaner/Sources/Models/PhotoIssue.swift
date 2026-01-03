@@ -186,12 +186,34 @@ struct DuplicateGroup: Identifiable {
     let id: String
     let assetIdentifiers: [String]
     let suggestedOriginalId: String
-    let similarity: Double          // 0.0 ~ 1.0
-    let potentialSavings: Int64     // 절약 가능 용량 (bytes)
+    let similarity: Double
+    let potentialSavings: Int64
 
     var count: Int { assetIdentifiers.count }
 
     var formattedSavings: String {
         ByteCountFormatter.string(fromByteCount: potentialSavings, countStyle: .file)
     }
+}
+
+enum LargeFileSizeOption: Int64, CaseIterable, Identifiable {
+    case mb5 = 5_242_880
+    case mb10 = 10_485_760
+    case mb25 = 26_214_400
+    case mb50 = 52_428_800
+    case mb100 = 104_857_600
+
+    var id: Int64 { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .mb5: "5 MB"
+        case .mb10: "10 MB"
+        case .mb25: "25 MB"
+        case .mb50: "50 MB"
+        case .mb100: "100 MB"
+        }
+    }
+
+    var bytes: Int64 { rawValue }
 }
