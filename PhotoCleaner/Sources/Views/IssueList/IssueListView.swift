@@ -21,8 +21,8 @@ enum DateFilter: String, CaseIterable, Identifiable {
 struct IssueListView: View {
     let issueType: IssueType
     let issues: [PhotoIssue]
-    var currentLargeFileSizeOption: LargeFileSizeOption?
-    var onLargeFileSizeChange: ((LargeFileSizeOption) async -> Void)?
+    @Binding var selectedSizeOption: LargeFileSizeOption
+    var onLargeFileSizeChange: (@Sendable (LargeFileSizeOption) async -> Void)?
 
     @State private var selectedIssues: Set<String> = []
     @State private var isSelectionMode = false
@@ -30,7 +30,7 @@ struct IssueListView: View {
     @State private var cachedStats: [(key: String, value: Int)] = []
     @State private var selectedDateFilter: DateFilter = .all
     @State private var groupedByDate: [DateFilter: [PhotoIssue]] = [:]
-    @State private var selectedSizeOption: LargeFileSizeOption = .mb10
+    @State private var sizeChangeTask: Task<Void, Never>?
 
     /// 대용량 파일은 크기순 정렬, 그 외는 원본 순서
     private var sortedIssues: [PhotoIssue] {
@@ -142,9 +142,9 @@ struct IssueListView: View {
             if issueType == .screenshot {
                 groupedByDate = groupIssuesByDate(issues)
             }
-            if issueType == .largeFile, let option = currentLargeFileSizeOption {
-                selectedSizeOption = option
-            }
+        }
+        .onDisappear {
+            sizeChangeTask?.cancel()
         }
     }
 
@@ -198,8 +198,8 @@ struct IssueListView: View {
                 ForEach(LargeFileSizeOption.allCases) { option in
                     Button {
                         guard option != selectedSizeOption else { return }
-                        selectedSizeOption = option
-                        Task {
+                        sizeChangeTask?.cancel()
+                        sizeChangeTask = Task {
                             await onLargeFileSizeChange?(option)
                         }
                     } label: {
@@ -538,7 +538,8 @@ struct PhotoThumbnailView: View {
     NavigationStack {
         IssueListView(
             issueType: .screenshot,
-            issues: []
+            issues: [],
+            selectedSizeOption: .constant(.mb10)
         )
     }
 }

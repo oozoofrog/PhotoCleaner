@@ -608,65 +608,141 @@ actor PhotoScanService {
         let pixelHeight: Int
         let creationDate: Date?
         let byteCount: Int64
+        let bucketKey: String
 
         var resolution: Int { pixelWidth * pixelHeight }
     }
+
+    private nonisolated static let maxBucketSize = 100
+    private nonisolated static let maxConcurrentFeaturePrints = 4
 
     func scanSimilarPhotos(
         assets: [PHAsset],
         similarityThreshold: Float = 0.95,
         progressHandler: @escaping @MainActor @Sendable (ScanProgress) -> Void
     ) async -> (issues: [PhotoIssue], groups: [DuplicateGroup]) {
-        let total = assets.count
-        var candidates: [FeaturePrintCandidate] = []
+        let buckets = bucketAssetsByMetadata(assets)
+        let assetMap = Dictionary(uniqueKeysWithValues: assets.map { ($0.localIdentifier, $0) })
 
-        for (index, asset) in assets.enumerated() {
-            if shouldUpdateProgress(index: index) {
-                await progressHandler(ScanProgress(
-                    phase: .scanning,
-                    current: index + 1,
-                    total: total,
-                    currentIssueType: .duplicate
-                ))
+        var allIssues: [PhotoIssue] = []
+        var allGroups: [DuplicateGroup] = []
+        var processedCount = 0
+        let total = assets.count
+
+        for (_, bucketAssets) in buckets {
+            var candidates: [FeaturePrintCandidate] = []
+
+            for asset in bucketAssets {
+                processedCount += 1
+                if shouldUpdateProgress(index: processedCount) {
+                    await progressHandler(ScanProgress(
+                        phase: .scanning,
+                        current: processedCount,
+                        total: total,
+                        currentIssueType: .duplicate
+                    ))
+                }
+
+                guard let result = await computeFeaturePrint(for: asset) else { continue }
+
+                let bucketKey = computeBucketKey(for: asset)
+                let candidate = FeaturePrintCandidate(
+                    assetId: asset.localIdentifier,
+                    featurePrint: result.featurePrint,
+                    pixelWidth: asset.pixelWidth,
+                    pixelHeight: asset.pixelHeight,
+                    creationDate: asset.creationDate,
+                    byteCount: result.byteCount,
+                    bucketKey: bucketKey
+                )
+                candidates.append(candidate)
             }
 
-            guard let result = await computeFeaturePrint(for: asset) else { continue }
-
-            let candidate = FeaturePrintCandidate(
-                assetId: asset.localIdentifier,
-                featurePrint: result.featurePrint,
-                pixelWidth: asset.pixelWidth,
-                pixelHeight: asset.pixelHeight,
-                creationDate: asset.creationDate,
-                byteCount: result.byteCount
-            )
-            candidates.append(candidate)
+            let bucketResult = groupSimilarCandidates(candidates, threshold: similarityThreshold, assetMap: assetMap)
+            allIssues.append(contentsOf: bucketResult.issues)
+            allGroups.append(contentsOf: bucketResult.groups)
         }
 
-        let assetMap = Dictionary(uniqueKeysWithValues: assets.map { ($0.localIdentifier, $0) })
-        return groupSimilarCandidates(candidates, threshold: similarityThreshold, assetMap: assetMap)
+        return (allIssues, allGroups)
+    }
+
+    private nonisolated func bucketAssetsByMetadata(_ assets: [PHAsset]) -> [String: [PHAsset]] {
+        var buckets: [String: [PHAsset]] = [:]
+
+        for asset in assets {
+            let key = computeBucketKey(for: asset)
+            buckets[key, default: []].append(asset)
+        }
+
+        var result: [String: [PHAsset]] = [:]
+        for (key, bucketAssets) in buckets {
+            if bucketAssets.count <= Self.maxBucketSize {
+                result[key] = bucketAssets
+            } else {
+                for (index, chunk) in bucketAssets.chunked(into: Self.maxBucketSize).enumerated() {
+                    result["\(key)-\(index)"] = chunk
+                }
+            }
+        }
+
+        return result
+    }
+
+    private nonisolated func computeBucketKey(for asset: PHAsset) -> String {
+        let calendar = Calendar.current
+        let dateKey: String
+        if let date = asset.creationDate {
+            let dayOfYear = calendar.ordinality(of: .day, in: .year, for: date) ?? 0
+            let year = calendar.component(.year, from: date)
+            let weekBucket = dayOfYear / 7
+            dateKey = "\(year)-w\(weekBucket)"
+        } else {
+            dateKey = "unknown"
+        }
+
+        let aspectRatio = asset.pixelHeight > 0 ? Double(asset.pixelWidth) / Double(asset.pixelHeight) : 1.0
+        let aspectBucket = Int(aspectRatio * 5) / 5
+
+        let resolutionBucket: String
+        let megapixels = (asset.pixelWidth * asset.pixelHeight) / 1_000_000
+        if megapixels < 4 {
+            resolutionBucket = "low"
+        } else if megapixels < 12 {
+            resolutionBucket = "medium"
+        } else {
+            resolutionBucket = "high"
+        }
+
+        return "\(dateKey)_\(aspectBucket)_\(resolutionBucket)"
     }
 
     private func computeFeaturePrint(for asset: PHAsset) async -> (featurePrint: VNFeaturePrintObservation, byteCount: Int64)? {
         let imageResult = await loadThumbnailImage(for: asset, targetSize: CGSize(width: 300, height: 300))
         guard let cgImage = imageResult.image else { return nil }
 
-        let request = VNGenerateImageFeaturePrintRequest()
-        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let request = VNGenerateImageFeaturePrintRequest()
+                let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
 
-        do {
-            try handler.perform([request])
-            guard let observation = request.results?.first else { return nil }
-            return (observation, imageResult.byteCount)
-        } catch {
-            return nil
+                do {
+                    try handler.perform([request])
+                    guard let observation = request.results?.first else {
+                        continuation.resume(returning: nil)
+                        return
+                    }
+                    continuation.resume(returning: (observation, imageResult.byteCount))
+                } catch {
+                    continuation.resume(returning: nil)
+                }
+            }
         }
     }
 
     private func loadThumbnailImage(for asset: PHAsset, targetSize: CGSize) async -> (image: CGImage?, byteCount: Int64) {
         await withCheckedContinuation { continuation in
             let options = PHImageRequestOptions()
-            options.deliveryMode = .fastFormat
+            options.deliveryMode = .highQualityFormat
             options.isNetworkAccessAllowed = false
             options.resizeMode = .fast
             options.isSynchronous = false
@@ -674,12 +750,24 @@ actor PhotoScanService {
             let scale = UIScreen.main.scale
             let size = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
 
+            let lock = NSLock()
+            var hasResumed = false
+
             PHImageManager.default().requestImage(
                 for: asset,
                 targetSize: size,
                 contentMode: .aspectFill,
                 options: options
             ) { image, info in
+                let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
+                guard !isDegraded else { return }
+
+                lock.lock()
+                let shouldResume = !hasResumed
+                if shouldResume { hasResumed = true }
+                lock.unlock()
+
+                guard shouldResume else { return }
                 let byteCount = Int64(asset.pixelWidth * asset.pixelHeight) / 4
                 continuation.resume(returning: (image?.cgImage, byteCount))
             }
@@ -798,12 +886,22 @@ actor PhotoScanService {
 // MARK: - PHAsset Extension
 
 extension PHAsset {
-    /// 로컬 식별자로 PHAsset 가져오기
     static func asset(withIdentifier identifier: String) -> PHAsset? {
         let result = PHAsset.fetchAssets(
             withLocalIdentifiers: [identifier],
             options: nil
         )
         return result.firstObject
+    }
+}
+
+// MARK: - Array Extension
+
+private extension Array {
+    func chunked(into size: Int) -> [[Element]] {
+        guard size > 0 else { return [self] }
+        return stride(from: 0, to: count, by: size).map {
+            Array(self[$0..<Swift.min($0 + size, count)])
+        }
     }
 }

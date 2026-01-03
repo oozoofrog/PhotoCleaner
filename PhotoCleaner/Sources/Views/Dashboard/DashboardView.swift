@@ -45,15 +45,16 @@ struct DashboardView: View {
             IssueListView(
                 issueType: issueType,
                 issues: viewModel.issues(for: issueType),
-                currentLargeFileSizeOption: viewModel.currentLargeFileSizeOption,
-                onLargeFileSizeChange: { option in
+                selectedSizeOption: $viewModel.currentLargeFileSizeOption,
+                onLargeFileSizeChange: { @Sendable option in
                     await viewModel.setLargeFileThreshold(option)
                 }
             )
         } else {
             IssueListView(
                 issueType: issueType,
-                issues: viewModel.issues(for: issueType)
+                issues: viewModel.issues(for: issueType),
+                selectedSizeOption: .constant(.mb10)
             )
         }
     }
