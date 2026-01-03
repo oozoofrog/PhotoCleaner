@@ -31,7 +31,7 @@ enum SimilarityThreshold: Int, CaseIterable, Identifiable {
     var floatValue: Float { Float(rawValue) / 100.0 }
 }
 
-enum ThumbnailSize: String, CaseIterable, Identifiable {
+enum ThumbnailSizeOption: String, CaseIterable, Identifiable {
     case small = "small"
     case medium = "medium"
     case large = "large"
@@ -103,7 +103,7 @@ final class AppSettings {
         didSet { defaults.set(autoScanEnabled, forKey: Keys.autoScanEnabled) }
     }
 
-    var thumbnailSize: ThumbnailSize {
+    var thumbnailSize: ThumbnailSizeOption {
         didSet { defaults.set(thumbnailSize.rawValue, forKey: Keys.thumbnailSize) }
     }
 
@@ -112,8 +112,8 @@ final class AppSettings {
     }
 
     private init() {
-        let storedLargeFileSize = defaults.string(forKey: Keys.largeFileSizeOption)
-        self.largeFileSizeOption = LargeFileSizeOption(rawValue: storedLargeFileSize ?? "") ?? .mb10
+        let storedLargeFileSize = Int64(defaults.integer(forKey: Keys.largeFileSizeOption))
+        self.largeFileSizeOption = LargeFileSizeOption(rawValue: storedLargeFileSize) ?? .mb10
 
         let storedDuplicateMode = defaults.string(forKey: Keys.duplicateDetectionMode)
         self.duplicateDetectionMode = DuplicateDetectionMode(rawValue: storedDuplicateMode ?? "") ?? .includeSimilar
@@ -124,7 +124,7 @@ final class AppSettings {
         self.autoScanEnabled = defaults.bool(forKey: Keys.autoScanEnabled)
 
         let storedThumbnailSize = defaults.string(forKey: Keys.thumbnailSize)
-        self.thumbnailSize = ThumbnailSize(rawValue: storedThumbnailSize ?? "") ?? .medium
+        self.thumbnailSize = ThumbnailSizeOption(rawValue: storedThumbnailSize ?? "") ?? .medium
 
         let storedSortOrder = defaults.string(forKey: Keys.sortOrder)
         self.sortOrder = SortOrder(rawValue: storedSortOrder ?? "") ?? .date

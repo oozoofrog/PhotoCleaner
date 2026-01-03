@@ -47,7 +47,7 @@ struct ScanResult: Sendable {
     let duplicateGroups: [DuplicateGroup]
     let scannedAt: Date
 
-    init(
+    nonisolated init(
         totalPhotos: Int,
         issues: [PhotoIssue],
         summaries: [IssueSummary],
@@ -93,10 +93,10 @@ actor PhotoScanService {
 
     private var cachedResult: ScanResult?
     private var lastProgressUpdate: Date = .distantPast
-    private(set) var largeFileThreshold: Int64 = LargeFileSizeOption.mb10.bytes
+    private(set) var largeFileThreshold: Int64 = 10 * 1024 * 1024
 
     func setLargeFileThreshold(_ threshold: LargeFileSizeOption) {
-        largeFileThreshold = threshold.bytes
+        largeFileThreshold = threshold.rawValue
         cachedResult = nil
     }
 
@@ -260,7 +260,7 @@ actor PhotoScanService {
     private nonisolated func detectIssues(
         for asset: PHAsset,
         types: [IssueType]? = nil,
-        largeFileThreshold: Int64 = LargeFileSizeOption.mb10.bytes
+        largeFileThreshold: Int64 = 10 * 1024 * 1024
     ) -> [PhotoIssue] {
         let targetTypes = types ?? IssueType.allCases
         var issues: [PhotoIssue] = []
@@ -277,7 +277,7 @@ actor PhotoScanService {
     private nonisolated func detectIssue(
         for asset: PHAsset,
         type: IssueType,
-        largeFileThreshold: Int64 = LargeFileSizeOption.mb10.bytes
+        largeFileThreshold: Int64 = 10 * 1024 * 1024
     ) -> PhotoIssue? {
         switch type {
         case .downloadFailed:
@@ -897,8 +897,8 @@ extension PHAsset {
 
 // MARK: - Array Extension
 
-private extension Array {
-    func chunked(into size: Int) -> [[Element]] {
+extension Array {
+    nonisolated func chunked(into size: Int) -> [[Element]] {
         guard size > 0 else { return [self] }
         return stride(from: 0, to: count, by: size).map {
             Array(self[$0..<Swift.min($0 + size, count)])

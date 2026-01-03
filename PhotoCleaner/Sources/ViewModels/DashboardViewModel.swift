@@ -27,7 +27,7 @@ final class DashboardViewModel {
     private(set) var scanProgress: ScanProgress?
     private(set) var scanResult: ScanResult?
     private(set) var lastScanDate: Date?
-    private(set) var currentLargeFileSizeOption: LargeFileSizeOption = .mb10
+    var currentLargeFileSizeOption: LargeFileSizeOption = .mb10
     private var currentScanTask: Task<Void, Never>?
 
     let permissionService: PhotoPermissionService

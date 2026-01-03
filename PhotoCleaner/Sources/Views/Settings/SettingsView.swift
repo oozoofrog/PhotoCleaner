@@ -82,7 +82,7 @@ struct SettingsView: View {
     private var displaySettingsSection: some View {
         Section {
             Picker("썸네일 크기", selection: $settings.thumbnailSize) {
-                ForEach(ThumbnailSize.allCases) { size in
+                ForEach(ThumbnailSizeOption.allCases) { size in
                     Text(size.displayName).tag(size)
                 }
             }

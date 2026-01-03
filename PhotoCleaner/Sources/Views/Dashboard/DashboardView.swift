@@ -230,7 +230,7 @@ struct SummaryCard: View {
                                     .font(Typography.headline)
                                     .foregroundStyle(AppColor.textPrimary)
                                 Image(systemName: "chevron.right")
-                                    .font(.system(size: IconSize.xs))
+                                    .font(.system(size: IconSize.sm))
                                     .foregroundStyle(AppColor.textTertiary)
                             }
                         }
