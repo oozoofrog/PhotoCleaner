@@ -14,6 +14,7 @@ struct AllPhotosView: View {
     @State private var showDeleteConfirmation = false
     @State private var deleteError: String?
     @State private var isDeleting = false
+    @State private var selectedAssetIdentifier: String?
 
     var body: some View {
         Group {
@@ -69,6 +70,11 @@ struct AllPhotosView: View {
         } message: {
             Text(deleteError ?? "")
         }
+        .navigationDestination(item: $selectedAssetIdentifier) { identifier in
+            if let asset = PHAsset.asset(withIdentifier: identifier) {
+                PhotoDetailView(asset: asset)
+            }
+        }
         .task {
             await loadAllPhotos()
         }
@@ -120,6 +126,8 @@ struct AllPhotosView: View {
                         ) {
                             if isSelectionMode {
                                 toggleSelection(asset.localIdentifier)
+                            } else {
+                                selectedAssetIdentifier = asset.localIdentifier
                             }
                         }
                         .photoAspectRatio(aspectRatio(for: asset))

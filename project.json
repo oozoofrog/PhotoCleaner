@@ -22,9 +22,9 @@
       "date": "2026-01-04",
       "summary": "사진 상세 화면 구현 - PhotoDetailView, PhotoMetadataSheet, IssueListView 네비게이션",
       "nextSteps": [
-        "AllPhotosView에서 상세 화면 네비게이션 추가",
         "메타데이터 기반 중복 감지 (task-008, 선택적)",
-        "자동 검사 기능"
+        "자동 검사 기능",
+        "사진 공유 기능"
       ]
     },
     "blockers": []
@@ -321,9 +321,16 @@
           "status": "completed",
           "assignedDate": "2026-01-04",
           "completedDate": "2026-01-04"
+        },
+        {
+          "id": "task-029",
+          "description": "AllPhotosView 네비게이션 연결",
+          "status": "completed",
+          "assignedDate": "2026-01-04",
+          "completedDate": "2026-01-04"
         }
       ],
-      "notes": "문제 사진 목록에서 탭 시 상세 화면으로 이동. 메타데이터 시트에서 문제 정보 및 사진 정보 표시"
+      "notes": "문제 사진 목록 및 전체 사진에서 탭 시 상세 화면으로 이동. 메타데이터 시트에서 문제 정보 및 사진 정보 표시"
     }
   ],
   "issues": [],
