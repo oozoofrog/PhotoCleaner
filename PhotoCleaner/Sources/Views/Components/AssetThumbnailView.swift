@@ -12,6 +12,7 @@ struct AssetThumbnailView: View {
     let isSelectionMode: Bool
     let onTap: () -> Void
 
+    @Environment(\.displayScale) private var displayScale
     @State private var thumbnail: UIImage?
     @State private var loadFailed = false
 
@@ -79,10 +80,9 @@ struct AssetThumbnailView: View {
         options.isNetworkAccessAllowed = false
         options.resizeMode = .fast
 
-        let scale = UIScreen.main.scale
         let targetHeight = ThumbnailSize.gridHeight
         let targetWidth = targetHeight * aspectRatio
-        let size = CGSize(width: targetWidth * scale, height: targetHeight * scale)
+        let size = CGSize(width: targetWidth * displayScale, height: targetHeight * displayScale)
 
         let result = await withCheckedContinuation { continuation in
             PHImageManager.default().requestImage(

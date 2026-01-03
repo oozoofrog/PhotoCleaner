@@ -471,7 +471,6 @@ actor PhotoScanService {
     ) async -> (issues: [PhotoIssue], groups: [DuplicateGroup]) {
         let total = assets.count
         var hashToAssets: [String: [DuplicateCandidate]] = [:]
-        let concurrencyLimit = 4
 
         for (index, asset) in assets.enumerated() {
             if shouldUpdateProgress(index: index) {
@@ -552,7 +551,6 @@ actor PhotoScanService {
         for (hash, candidates) in hashToAssets where candidates.count >= 2 {
             let sortedCandidates = selectOriginalFirst(candidates: candidates)
             let originalId = sortedCandidates[0].assetId
-            let duplicateIds = sortedCandidates.dropFirst().map { $0.assetId }
             let potentialSavings = sortedCandidates.dropFirst().reduce(Int64(0)) { $0 + $1.byteCount }
 
             let group = DuplicateGroup(
@@ -717,7 +715,8 @@ actor PhotoScanService {
     }
 
     private func computeFeaturePrint(for asset: PHAsset) async -> (featurePrint: VNFeaturePrintObservation, byteCount: Int64)? {
-        let imageResult = await loadThumbnailImage(for: asset, targetSize: CGSize(width: 300, height: 300))
+        let scale = await MainActor.run { UITraitCollection.current.displayScale }
+        let imageResult = await loadThumbnailImage(for: asset, targetSize: CGSize(width: 300, height: 300), scale: scale)
         guard let cgImage = imageResult.image else { return nil }
 
         return await withCheckedContinuation { continuation in
@@ -739,7 +738,7 @@ actor PhotoScanService {
         }
     }
 
-    private func loadThumbnailImage(for asset: PHAsset, targetSize: CGSize) async -> (image: CGImage?, byteCount: Int64) {
+    private func loadThumbnailImage(for asset: PHAsset, targetSize: CGSize, scale: CGFloat) async -> (image: CGImage?, byteCount: Int64) {
         await withCheckedContinuation { continuation in
             let options = PHImageRequestOptions()
             options.deliveryMode = .highQualityFormat
@@ -747,7 +746,6 @@ actor PhotoScanService {
             options.resizeMode = .fast
             options.isSynchronous = false
 
-            let scale = UIScreen.main.scale
             let size = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
 
             let lock = NSLock()
