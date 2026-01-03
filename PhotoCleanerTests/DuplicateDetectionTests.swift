@@ -8,6 +8,7 @@ import Testing
 @testable import PhotoCleaner
 
 @Suite("DuplicateGroup Tests")
+@MainActor
 struct DuplicateGroupTests {
 
     @Test("DuplicateGroup count는 assetIdentifiers.count와 동일")
@@ -52,6 +53,7 @@ struct DuplicateGroupTests {
 }
 
 @Suite("ScanResult Duplicate Tests")
+@MainActor
 struct ScanResultDuplicateTests {
 
     @Test("duplicateSummary 계산이 정확함")
@@ -126,6 +128,7 @@ struct ScanResultDuplicateTests {
 }
 
 @Suite("DuplicateGroup ID Tests")
+@MainActor
 struct DuplicateGroupIDTests {
 
     @Test("DuplicateGroup은 Identifiable")

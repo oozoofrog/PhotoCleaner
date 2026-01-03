@@ -21,6 +21,7 @@ enum DateFilter: String, CaseIterable, Identifiable {
 struct IssueListView: View {
     let issueType: IssueType
     let issues: [PhotoIssue]
+    var duplicateGroups: [DuplicateGroup] = []
     @Binding var selectedSizeOption: LargeFileSizeOption
     var onLargeFileSizeChange: (@Sendable (LargeFileSizeOption) async -> Void)?
 
@@ -32,6 +33,7 @@ struct IssueListView: View {
     @State private var groupedByDate: [DateFilter: [PhotoIssue]] = [:]
     @State private var sizeChangeTask: Task<Void, Never>?
     @State private var selectedIssue: PhotoIssue?
+    @State private var groupToDelete: DuplicateGroup?
 
     /// 대용량 파일은 크기순 정렬, 그 외는 원본 순서
     private var sortedIssues: [PhotoIssue] {
@@ -71,16 +73,22 @@ struct IssueListView: View {
             }
         }
         .confirmationDialog(
-            "선택한 사진 삭제",
+            deleteConfirmationTitle,
             isPresented: $showDeleteConfirmation,
             titleVisibility: .visible
         ) {
             Button("삭제", role: .destructive) {
-                deleteSelectedPhotos()
+                if groupToDelete != nil {
+                    deleteDuplicatesInGroup()
+                } else {
+                    deleteSelectedPhotos()
+                }
             }
-            Button("취소", role: .cancel) {}
+            Button("취소", role: .cancel) {
+                groupToDelete = nil
+            }
         } message: {
-            Text("\(selectedIssues.count)장의 사진을 삭제할까요?\n삭제된 사진은 '최근 삭제된 항목'으로 이동됩니다.")
+            Text(deleteConfirmationMessage)
         }
         .alert(
             "삭제 실패",
@@ -135,6 +143,8 @@ struct IssueListView: View {
                 } else if issueType == .largeFile {
                     largeFileSizeFilterPicker
                     standardPhotoGrid(issues: sortedIssues)
+                } else if issueType == .duplicate && !duplicateGroups.isEmpty {
+                    duplicateGroupsContent
                 } else {
                     standardPhotoGrid(issues: sortedIssues)
                 }
@@ -246,6 +256,43 @@ struct IssueListView: View {
         }
     }
 
+    @ViewBuilder
+    private var duplicateGroupsContent: some View {
+        let sortedGroups = duplicateGroups.sorted { $0.potentialSavings > $1.potentialSavings }
+        
+        VStack(spacing: Spacing.md) {
+            ForEach(sortedGroups) { group in
+                DuplicateGroupSectionView(
+                    group: group,
+                    selectedIds: selectedIssues,
+                    isSelectionMode: isSelectionMode
+                ) { assetId in
+                    if isSelectionMode {
+                        toggleAssetSelection(assetId)
+                    } else {
+                        navigateToAsset(assetId)
+                    }
+                } onDeleteDuplicates: {
+                    groupToDelete = group
+                    showDeleteConfirmation = true
+                }
+            }
+        }
+        .padding(.horizontal, Spacing.sm)
+    }
+    
+    private func toggleAssetSelection(_ assetId: String) {
+        if let issue = issues.first(where: { $0.assetIdentifier == assetId }) {
+            toggleSelection(issue.id)
+        }
+    }
+    
+    private func navigateToAsset(_ assetId: String) {
+        if let issue = issues.first(where: { $0.assetIdentifier == assetId }) {
+            selectedIssue = issue
+        }
+    }
+    
     private func groupIssuesByDate(_ issues: [PhotoIssue]) -> [DateFilter: [PhotoIssue]] {
         let calendar = Calendar.current
         let now = Date()
@@ -375,8 +422,21 @@ struct IssueListView: View {
 
     @State private var isDeleting = false
     @State private var deleteError: String?
-
-    // MARK: - Actions
+    
+    private var deleteConfirmationTitle: String {
+        if groupToDelete != nil {
+            return "중복 사진 삭제"
+        }
+        return "선택한 사진 삭제"
+    }
+    
+    private var deleteConfirmationMessage: String {
+        if let group = groupToDelete {
+            let count = group.duplicateAssetIdentifiers.count
+            return "\(count)장의 중복 사진을 삭제할까요?\n원본은 유지됩니다."
+        }
+        return "\(selectedIssues.count)장의 사진을 삭제할까요?\n삭제된 사진은 '최근 삭제된 항목'으로 이동됩니다."
+    }
 
     private func toggleSelection(_ id: String) {
         if selectedIssues.contains(id) {
@@ -398,13 +458,12 @@ struct IssueListView: View {
 
     private func performDeletion() async {
         deleteError = nil
-        defer { isDeleting = false }  // 함수 종료 시 항상 리셋
+        defer { isDeleting = false }
 
         let identifiersToDelete = issues
             .filter { selectedIssues.contains($0.id) }
             .map(\.assetIdentifier)
 
-        // PHAsset.fetchAssets는 동기 함수지만 thread-safe하므로 직접 호출 가능
         let assetsToDelete = PHAsset.fetchAssets(
             withLocalIdentifiers: identifiersToDelete,
             options: nil
@@ -416,6 +475,36 @@ struct IssueListView: View {
             }
             selectedIssues.removeAll()
             isSelectionMode = false
+        } catch {
+            deleteError = error.localizedDescription
+        }
+    }
+    
+    private func deleteDuplicatesInGroup() {
+        guard let group = groupToDelete, !isDeleting else { return }
+        isDeleting = true
+        
+        Task {
+            await performGroupDeletion(group: group)
+            groupToDelete = nil
+        }
+    }
+    
+    private func performGroupDeletion(group: DuplicateGroup) async {
+        deleteError = nil
+        defer { isDeleting = false }
+        
+        let identifiersToDelete = group.duplicateAssetIdentifiers
+        
+        let assetsToDelete = PHAsset.fetchAssets(
+            withLocalIdentifiers: identifiersToDelete,
+            options: nil
+        )
+        
+        do {
+            try await PHPhotoLibrary.shared().performChanges {
+                PHAssetChangeRequest.deleteAssets(assetsToDelete)
+            }
         } catch {
             deleteError = error.localizedDescription
         }

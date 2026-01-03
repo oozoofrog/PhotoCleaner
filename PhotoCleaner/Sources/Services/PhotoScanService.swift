@@ -740,34 +740,24 @@ actor PhotoScanService {
 
     private func loadThumbnailImage(for asset: PHAsset, targetSize: CGSize, scale: CGFloat) async -> (image: CGImage?, byteCount: Int64) {
         await withCheckedContinuation { continuation in
-            let options = PHImageRequestOptions()
-            options.deliveryMode = .highQualityFormat
-            options.isNetworkAccessAllowed = false
-            options.resizeMode = .fast
-            options.isSynchronous = false
+            DispatchQueue.global(qos: .userInitiated).async {
+                let options = PHImageRequestOptions()
+                options.deliveryMode = .fastFormat
+                options.isNetworkAccessAllowed = false
+                options.resizeMode = .fast
+                options.isSynchronous = true
 
-            let size = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
+                let size = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
 
-            let lock = NSLock()
-            var hasResumed = false
-
-            PHImageManager.default().requestImage(
-                for: asset,
-                targetSize: size,
-                contentMode: .aspectFill,
-                options: options
-            ) { image, info in
-                let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
-                guard !isDegraded else { return }
-
-                lock.lock()
-                let shouldResume = !hasResumed
-                if shouldResume { hasResumed = true }
-                lock.unlock()
-
-                guard shouldResume else { return }
-                let byteCount = Int64(asset.pixelWidth * asset.pixelHeight) / 4
-                continuation.resume(returning: (image?.cgImage, byteCount))
+                PHImageManager.default().requestImage(
+                    for: asset,
+                    targetSize: size,
+                    contentMode: .aspectFill,
+                    options: options
+                ) { image, _ in
+                    let byteCount = Int64(asset.pixelWidth * asset.pixelHeight) / 4
+                    continuation.resume(returning: (image?.cgImage, byteCount))
+                }
             }
         }
     }

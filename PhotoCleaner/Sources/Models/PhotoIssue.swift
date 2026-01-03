@@ -181,8 +181,7 @@ struct IssueSummary: Identifiable {
     }
 }
 
-/// 중복 그룹
-struct DuplicateGroup: Identifiable {
+struct DuplicateGroup: Identifiable, Sendable {
     let id: String
     let assetIdentifiers: [String]
     let suggestedOriginalId: String
@@ -193,6 +192,26 @@ struct DuplicateGroup: Identifiable {
 
     var formattedSavings: String {
         ByteCountFormatter.string(fromByteCount: potentialSavings, countStyle: .file)
+    }
+    
+    func isOriginal(_ assetId: String) -> Bool {
+        assetId == suggestedOriginalId
+    }
+    
+    var isExactDuplicate: Bool {
+        similarity >= 1.0
+    }
+    
+    var duplicateAssetIdentifiers: [String] {
+        assetIdentifiers.filter { $0 != suggestedOriginalId }
+    }
+    
+    var similarityLabel: String {
+        if isExactDuplicate {
+            return "완전 동일"
+        }
+        let percent = Int(similarity * 100)
+        return "\(percent)% 유사"
     }
 }
 

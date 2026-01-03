@@ -72,6 +72,13 @@ struct DashboardView: View {
                     await viewModel.setLargeFileThreshold(option)
                 }
             )
+        } else if issueType == .duplicate {
+            IssueListView(
+                issueType: issueType,
+                issues: viewModel.issues(for: issueType),
+                duplicateGroups: viewModel.duplicateGroups,
+                selectedSizeOption: .constant(.mb10)
+            )
         } else {
             IssueListView(
                 issueType: issueType,
