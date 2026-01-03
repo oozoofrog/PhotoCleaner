@@ -8,14 +8,37 @@
 import SwiftUI
 import Photos
 
+enum DateFilter: String, CaseIterable, Identifiable {
+    case all = "전체"
+    case today = "오늘"
+    case thisWeek = "이번 주"
+    case thisMonth = "이번 달"
+    case older = "오래된 것"
+
+    var id: String { rawValue }
+}
+
 struct IssueListView: View {
     let issueType: IssueType
     let issues: [PhotoIssue]
+    @Binding var selectedSizeOption: LargeFileSizeOption
+    var onLargeFileSizeChange: (@Sendable (LargeFileSizeOption) async -> Void)?
 
     @State private var selectedIssues: Set<String> = []
     @State private var isSelectionMode = false
     @State private var showDeleteConfirmation = false
     @State private var cachedStats: [(key: String, value: Int)] = []
+    @State private var selectedDateFilter: DateFilter = .all
+    @State private var groupedByDate: [DateFilter: [PhotoIssue]] = [:]
+    @State private var sizeChangeTask: Task<Void, Never>?
+
+    /// 대용량 파일은 크기순 정렬, 그 외는 원본 순서
+    private var sortedIssues: [PhotoIssue] {
+        if issueType == .largeFile {
+            return issues.sorted { ($0.metadata.fileSize ?? 0) > ($1.metadata.fileSize ?? 0) }
+        }
+        return issues
+    }
 
     var body: some View {
         Group {
@@ -98,28 +121,17 @@ struct IssueListView: View {
     private var issueListContent: some View {
         ScrollView {
             VStack(spacing: Spacing.sm) {
-                // 헤더: 문제 유형 설명 + 통계
                 issueInfoHeader
 
-                // Row-justified 사진 그리드 (자연 비율 유지)
-                JustifiedPhotoGrid(
-                    targetRowHeight: GridLayout.rowHeight,
-                    spacing: Spacing.xs
-                ) {
-                    ForEach(issues) { issue in
-                        PhotoThumbnailView(
-                            issue: issue,
-                            isSelected: selectedIssues.contains(issue.id),
-                            isSelectionMode: isSelectionMode
-                        ) {
-                            if isSelectionMode {
-                                toggleSelection(issue.id)
-                            }
-                        }
-                        .photoAspectRatio(issue.aspectRatio)
-                    }
+                if issueType == .screenshot {
+                    screenshotDateFilterPicker
+                    screenshotGroupedContent
+                } else if issueType == .largeFile {
+                    largeFileSizeFilterPicker
+                    standardPhotoGrid(issues: sortedIssues)
+                } else {
+                    standardPhotoGrid(issues: sortedIssues)
                 }
-                .padding(.horizontal, Spacing.sm)
             }
             .padding(.top, Spacing.sm)
         }
@@ -127,7 +139,133 @@ struct IssueListView: View {
             if issueType == .downloadFailed {
                 cachedStats = computeResourceStatistics()
             }
+            if issueType == .screenshot {
+                groupedByDate = groupIssuesByDate(issues)
+            }
         }
+        .onDisappear {
+            sizeChangeTask?.cancel()
+        }
+    }
+
+    private func standardPhotoGrid(issues: [PhotoIssue]) -> some View {
+        JustifiedPhotoGrid(
+            targetRowHeight: GridLayout.rowHeight,
+            spacing: Spacing.xs
+        ) {
+            ForEach(issues) { issue in
+                PhotoThumbnailView(
+                    issue: issue,
+                    isSelected: selectedIssues.contains(issue.id),
+                    isSelectionMode: isSelectionMode
+                ) {
+                    if isSelectionMode {
+                        toggleSelection(issue.id)
+                    }
+                }
+                .photoAspectRatio(issue.aspectRatio)
+            }
+        }
+        .padding(.horizontal, Spacing.sm)
+    }
+
+    private var screenshotDateFilterPicker: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Spacing.sm) {
+                ForEach(DateFilter.allCases) { filter in
+                    let count = filter == .all ? issues.count : (groupedByDate[filter]?.count ?? 0)
+                    Button {
+                        withAnimation { selectedDateFilter = filter }
+                    } label: {
+                        Text("\(filter.rawValue) (\(count))")
+                            .font(Typography.subheadline)
+                            .padding(.horizontal, Spacing.md)
+                            .padding(.vertical, Spacing.sm)
+                            .background(selectedDateFilter == filter ? AppColor.primary : AppColor.backgroundSecondary)
+                            .foregroundStyle(selectedDateFilter == filter ? .white : AppColor.textPrimary)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, Spacing.sm)
+        }
+    }
+
+    private var largeFileSizeFilterPicker: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Spacing.sm) {
+                ForEach(LargeFileSizeOption.allCases) { option in
+                    Button {
+                        guard option != selectedSizeOption else { return }
+                        sizeChangeTask?.cancel()
+                        sizeChangeTask = Task {
+                            await onLargeFileSizeChange?(option)
+                        }
+                    } label: {
+                        Text("\(option.displayName) 이상")
+                            .font(Typography.subheadline)
+                            .padding(.horizontal, Spacing.md)
+                            .padding(.vertical, Spacing.sm)
+                            .background(selectedSizeOption == option ? AppColor.primary : AppColor.backgroundSecondary)
+                            .foregroundStyle(selectedSizeOption == option ? .white : AppColor.textPrimary)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, Spacing.sm)
+        }
+    }
+
+    @ViewBuilder
+    private var screenshotGroupedContent: some View {
+        let filteredIssues = selectedDateFilter == .all ? issues : (groupedByDate[selectedDateFilter] ?? [])
+
+        if filteredIssues.isEmpty {
+            VStack(spacing: Spacing.md) {
+                Image(systemName: "photo.on.rectangle")
+                    .font(.system(size: IconSize.xl))
+                    .foregroundStyle(AppColor.textTertiary)
+                Text("해당 기간에 스크린샷이 없습니다")
+                    .font(Typography.body)
+                    .foregroundStyle(AppColor.textSecondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, Spacing.xxl)
+        } else {
+            standardPhotoGrid(issues: filteredIssues)
+        }
+    }
+
+    private func groupIssuesByDate(_ issues: [PhotoIssue]) -> [DateFilter: [PhotoIssue]] {
+        let calendar = Calendar.current
+        let now = Date()
+        let startOfToday = calendar.startOfDay(for: now)
+        let startOfWeek = calendar.date(byAdding: .day, value: -7, to: startOfToday)!
+        let startOfMonth = calendar.date(byAdding: .day, value: -30, to: startOfToday)!
+
+        var grouped: [DateFilter: [PhotoIssue]] = [:]
+
+        for issue in issues {
+            guard let asset = PHAsset.asset(withIdentifier: issue.assetIdentifier),
+                  let creationDate = asset.creationDate else {
+                grouped[.older, default: []].append(issue)
+                continue
+            }
+
+            if creationDate >= startOfToday {
+                grouped[.today, default: []].append(issue)
+            } else if creationDate >= startOfWeek {
+                grouped[.thisWeek, default: []].append(issue)
+            } else if creationDate >= startOfMonth {
+                grouped[.thisMonth, default: []].append(issue)
+            } else {
+                grouped[.older, default: []].append(issue)
+            }
+        }
+
+        return grouped
     }
 
     // MARK: - Issue Info Header
@@ -400,7 +538,8 @@ struct PhotoThumbnailView: View {
     NavigationStack {
         IssueListView(
             issueType: .screenshot,
-            issues: []
+            issues: [],
+            selectedSizeOption: .constant(.mb10)
         )
     }
 }

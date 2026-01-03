@@ -32,11 +32,30 @@ struct DashboardView: View {
             }
             .navigationTitle("PhotoCleaner")
             .navigationDestination(item: $selectedIssueType) { issueType in
-                IssueListView(
-                    issueType: issueType,
-                    issues: viewModel.issues(for: issueType)
-                )
+                issueListView(for: issueType)
             }
+        }
+    }
+
+    // MARK: - Issue List Builder
+
+    @ViewBuilder
+    private func issueListView(for issueType: IssueType) -> some View {
+        if issueType == .largeFile {
+            IssueListView(
+                issueType: issueType,
+                issues: viewModel.issues(for: issueType),
+                selectedSizeOption: $viewModel.currentLargeFileSizeOption,
+                onLargeFileSizeChange: { @Sendable option in
+                    await viewModel.setLargeFileThreshold(option)
+                }
+            )
+        } else {
+            IssueListView(
+                issueType: issueType,
+                issues: viewModel.issues(for: issueType),
+                selectedSizeOption: .constant(.mb10)
+            )
         }
     }
 

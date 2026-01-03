@@ -27,6 +27,8 @@ final class DashboardViewModel {
     private(set) var scanProgress: ScanProgress?
     private(set) var scanResult: ScanResult?
     private(set) var lastScanDate: Date?
+    private(set) var currentLargeFileSizeOption: LargeFileSizeOption = .mb10
+    private var currentScanTask: Task<Void, Never>?
 
     let permissionService: PhotoPermissionService
     private let scanService = PhotoScanService()
@@ -165,5 +167,45 @@ final class DashboardViewModel {
 
     var formattedPotentialSavings: String {
         ByteCountFormatter.string(fromByteCount: duplicateSummary.potentialSavings, countStyle: .file)
+    }
+
+    func setLargeFileThreshold(_ option: LargeFileSizeOption) async {
+        let previousOption = currentLargeFileSizeOption
+        currentLargeFileSizeOption = option
+        await scanService.setLargeFileThreshold(option)
+
+        if option.bytes > previousOption.bytes {
+            filterLargeFilesFromExistingResult(threshold: option.bytes)
+        } else {
+            currentScanTask?.cancel()
+            currentScanTask = Task { await startScan() }
+        }
+    }
+
+    private func filterLargeFilesFromExistingResult(threshold: Int64) {
+        guard let existingResult = scanResult else { return }
+
+        let filteredLargeFiles = existingResult.issues(for: .largeFile).filter {
+            ($0.metadata.fileSize ?? 0) >= threshold
+        }
+
+        let otherIssues = existingResult.issues.filter { $0.issueType != .largeFile }
+        let mergedIssues = otherIssues + filteredLargeFiles
+
+        let filteredSize = filteredLargeFiles.reduce(Int64(0)) { $0 + ($1.metadata.fileSize ?? 0) }
+        let otherSummaries = existingResult.summaries.filter { $0.issueType != .largeFile }
+        let newLargeFileSummary = IssueSummary(
+            issueType: .largeFile,
+            count: filteredLargeFiles.count,
+            totalSize: filteredSize
+        )
+
+        scanResult = ScanResult(
+            totalPhotos: existingResult.totalPhotos,
+            issues: mergedIssues,
+            summaries: otherSummaries + [newLargeFileSummary],
+            duplicateGroups: existingResult.duplicateGroups,
+            scannedAt: existingResult.scannedAt
+        )
     }
 }
