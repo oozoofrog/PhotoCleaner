@@ -6,24 +6,24 @@
     "startDate": "2026-01-01",
     "lastUpdated": "2026-01-02",
     "techStack": [
-      "Swift 5.0",
+      "Swift 6",
       "SwiftUI",
       "Swift Concurrency",
-      "PhotoKit"
+      "PhotoKit",
+      "Vision"
     ],
     "repository": "https://github.com/oozoofrog/PhotoCleaner",
     "bundleId": "com.oozoofrog.app.PhotoCleaner"
   },
   "currentStatus": {
     "phase": "development",
-    "activeFeature": "feature-003",
+    "activeFeature": "feature-001",
     "lastSession": {
       "date": "2026-01-03",
-      "summary": "중복 사진 감지 기능 Phase 1 구현 - SHA256 해시 기반 완전 동일 감지, 원본 자동 선택, 대시보드 중복 카드 섹션",
+      "summary": "PR #5 머지 완료 - Vision pHash 유사 사진 감지, 스크린샷 날짜별 필터, 대용량 파일 크기 설정 UI, Oracle/Linus 코드 리뷰 대응",
       "nextSteps": [
-        "유사 사진 감지 구현 (Vision pHash)",
-        "스크린샷 날짜별 그룹핑 UI",
-        "대용량 파일 크기 설정 UI"
+        "사진 그리드 UI 구현 (task-003)",
+        "메타데이터 기반 중복 감지 (task-008, 선택적)"
       ]
     },
     "blockers": []
@@ -97,7 +97,7 @@
       "id": "feature-003",
       "name": "중복 사진 감지",
       "description": "동일하거나 유사한 사진을 감지하여 정리",
-      "status": "in_progress",
+      "status": "completed",
       "priority": "medium",
       "dependencies": ["feature-001"],
       "tasks": [
@@ -121,9 +121,16 @@
           "status": "completed",
           "assignedDate": "2026-01-03",
           "completedDate": "2026-01-03"
+        },
+        {
+          "id": "task-022",
+          "description": "Vision pHash 유사 사진 감지",
+          "status": "completed",
+          "assignedDate": "2026-01-03",
+          "completedDate": "2026-01-03"
         }
       ],
-      "notes": "SHA256 해시 기반 완전 동일 중복 감지 구현 완료. 대시보드에 중복 카드 섹션 추가. 유사 사진 감지(Phase 2)는 미구현"
+      "notes": "SHA256 해시 기반 완전 동일 + Vision pHash 유사 사진 감지 완료. 메타데이터 버킷팅으로 O(n²) 최적화. 대시보드에 중복 카드 섹션 추가"
     },
     {
       "id": "feature-004",
@@ -161,7 +168,7 @@
       "id": "feature-005",
       "name": "스크린샷 정리",
       "description": "스크린샷만 모아서 일괄 관리 및 삭제",
-      "status": "in_progress",
+      "status": "completed",
       "priority": "high",
       "dependencies": ["feature-001"],
       "tasks": [
@@ -175,34 +182,34 @@
         {
           "id": "task-014",
           "description": "날짜별 그룹핑 UI",
-          "status": "todo",
-          "assignedDate": null,
-          "completedDate": null
+          "status": "completed",
+          "assignedDate": "2026-01-03",
+          "completedDate": "2026-01-03"
         },
         {
           "id": "task-015",
           "description": "스마트 필터 (오늘/이번주/오래된것)",
-          "status": "todo",
-          "assignedDate": null,
-          "completedDate": null
+          "status": "completed",
+          "assignedDate": "2026-01-03",
+          "completedDate": "2026-01-03"
         }
       ],
-      "notes": "detectScreenshot 구현 완료. 그룹핑/필터 UI 추가 필요"
+      "notes": "detectScreenshot + DateFilter 날짜별 필터 UI 구현 완료 (전체/오늘/이번주/이번달/오래된것)"
     },
     {
       "id": "feature-006",
       "name": "대용량 파일 감지",
       "description": "설정된 크기 이상의 파일 감지 및 관리",
-      "status": "in_progress",
+      "status": "completed",
       "priority": "medium",
       "dependencies": ["feature-001"],
       "tasks": [
         {
           "id": "task-016",
           "description": "파일 크기 기준 설정 UI",
-          "status": "todo",
-          "assignedDate": null,
-          "completedDate": null
+          "status": "completed",
+          "assignedDate": "2026-01-03",
+          "completedDate": "2026-01-03"
         },
         {
           "id": "task-017",
@@ -214,12 +221,12 @@
         {
           "id": "task-018",
           "description": "크기순 정렬 목록 UI",
-          "status": "todo",
-          "assignedDate": null,
-          "completedDate": null
+          "status": "completed",
+          "assignedDate": "2026-01-03",
+          "completedDate": "2026-01-03"
         }
       ],
-      "notes": "detectLargeFile 구현 완료 (기본 10MB). 설정 UI 추가 필요"
+      "notes": "LargeFileSizeOption (5/10/25/50/100MB) + largeFileSizeFilterPicker UI + 크기순 내림차순 정렬 구현 완료"
     },
     {
       "id": "feature-007",
@@ -246,12 +253,12 @@
         {
           "id": "task-021",
           "description": "중복 사진 요약 카드",
-          "status": "todo",
-          "assignedDate": null,
-          "completedDate": null
+          "status": "completed",
+          "assignedDate": "2026-01-03",
+          "completedDate": "2026-01-03"
         }
       ],
-      "notes": "SummaryCard, IssueCard 구현 완료. 중복 요약 카드는 feature-003 완료 후 추가"
+      "notes": "SummaryCard, IssueCard, DuplicateCard 구현 완료. 중복 그룹 수, 정리 가능 용량 표시"
     }
   ],
   "issues": [],
@@ -424,6 +431,23 @@
         "DuplicateGroup 모델 활용 및 ScanResult 확장",
         "대시보드에 중복 사진 카드 섹션 추가",
         "DuplicateDetectionTests 테스트 케이스 추가"
+      ]
+    },
+    {
+      "date": "2026-01-03",
+      "version": "0.3.0",
+      "changes": [
+        "PR #5 머지 - 사진 스캔 기능 강화",
+        "Vision pHash 기반 유사 사진 감지 (VNGenerateImageFeaturePrintRequest)",
+        "메타데이터 버킷팅으로 유사 사진 비교 O(n²) 최적화",
+        "LargeFileSizeOption enum (5/10/25/50/100MB 선택)",
+        "대용량 파일 크기 설정 UI (largeFileSizeFilterPicker)",
+        "대용량 파일 크기순 내림차순 정렬",
+        "스크린샷 DateFilter (전체/오늘/이번주/이번달/오래된것)",
+        "Actor 프로퍼티 동기 접근 제거 - ViewModel 자체 상태 관리",
+        "Vision perform() 블로킹 → DispatchQueue.global 분리",
+        "Continuation 다중 resume 방지 - NSLock + isDegraded 체크",
+        "AGENTS.md 생성 - 빌드/테스트 명령어, 코드 스타일 가이드"
       ]
     }
   ],

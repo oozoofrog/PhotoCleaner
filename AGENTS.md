@@ -6,19 +6,19 @@ Guidelines for AI agents working in this iOS/SwiftUI codebase.
 
 ```bash
 # Build (Debug)
-xcodebuild -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'platform=iOS Simulator,name=iPhone 16' build
+xcodebuild -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'platform=iOS Simulator,name=iPhone 17' build
 
 # Build (Release)
 xcodebuild -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -configuration Release build
 
 # Run all tests
-xcodebuild test -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'platform=iOS Simulator,name=iPhone 16'
+xcodebuild test -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'platform=iOS Simulator,name=iPhone 17'
 
 # Run single test file
-xcodebuild test -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:PhotoCleanerTests/PhotoIssueTests
+xcodebuild test -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:PhotoCleanerTests/PhotoIssueTests
 
 # Run single test method
-xcodebuild test -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:PhotoCleanerTests/PhotoIssueTests/issueTypeDisplayNameNotEmpty
+xcodebuild test -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:PhotoCleanerTests/PhotoIssueTests/issueTypeDisplayNameNotEmpty
 ```
 
 ## Project Structure
