@@ -17,13 +17,14 @@
   },
   "currentStatus": {
     "phase": "development",
-    "activeFeature": "feature-001",
+    "activeFeature": null,
     "lastSession": {
       "date": "2026-01-03",
-      "summary": "PR #5 머지 완료 - Vision pHash 유사 사진 감지, 스크린샷 날짜별 필터, 대용량 파일 크기 설정 UI, Oracle/Linus 코드 리뷰 대응",
+      "summary": "전체 사진 그리드 UI 구현 - AllPhotosView, AssetThumbnailView, 대시보드 진입점",
       "nextSteps": [
-        "사진 그리드 UI 구현 (task-003)",
-        "메타데이터 기반 중복 감지 (task-008, 선택적)"
+        "메타데이터 기반 중복 감지 (task-008, 선택적)",
+        "설정 화면 구현",
+        "자동 검사 기능"
       ]
     },
     "blockers": []
@@ -33,7 +34,7 @@
       "id": "feature-001",
       "name": "사진첩 접근 및 표시",
       "description": "PhotoKit을 사용하여 사진첩에 접근하고 사진 목록을 표시",
-      "status": "in_progress",
+      "status": "completed",
       "priority": "high",
       "dependencies": [],
       "tasks": [
@@ -54,12 +55,12 @@
         {
           "id": "task-003",
           "description": "사진 그리드 UI 구현",
-          "status": "todo",
-          "assignedDate": null,
-          "completedDate": null
+          "status": "completed",
+          "assignedDate": "2026-01-03",
+          "completedDate": "2026-01-03"
         }
       ],
-      "notes": "PhotoPermissionService, PhotoScanService 구현 완료. 전체 사진 그리드는 별도 화면으로 구현 예정"
+      "notes": "PhotoPermissionService, PhotoScanService, AllPhotosView 구현 완료. 대시보드에서 전체 사진으로 이동 가능"
     },
     {
       "id": "feature-002",
