@@ -43,6 +43,10 @@ firebase-debug.log
 .idea/
 *.iml
 
+# LSP (sourcekit-lsp)
+.compile
+buildServer.json
+
 # Secrets & Environment
 *.xcconfig
 !Base.xcconfig

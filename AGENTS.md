@@ -21,6 +21,39 @@ xcodebuild test -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destinatio
 xcodebuild test -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:PhotoCleanerTests/PhotoIssueTests/issueTypeDisplayNameNotEmpty
 ```
 
+## LSP Setup (sourcekit-lsp)
+
+iOS 프로젝트에서 sourcekit-lsp를 사용하려면 빌드 후 컴파일 플래그를 생성해야 합니다.
+
+```bash
+# 자동 설정 스크립트 (권장)
+./scripts/setup-lsp.sh
+
+# 또는 수동 실행
+xcodebuild -project PhotoCleaner.xcodeproj \
+  -scheme PhotoCleaner \
+  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  clean build 2>&1 | xcode-build-server parse
+```
+
+이 명령은 `.compile` 파일을 생성하여 sourcekit-lsp가 iOS SDK를 인식하게 합니다.
+
+### 필수 도구
+- `xcode-build-server`: `brew install xcode-build-server`
+
+### 생성되는 파일
+- `.compile`: 컴파일 플래그 (iOS SDK 경로, 타겟 정보 포함)
+- `buildServer.json`: xcode-build-server 설정
+
+### LSP 기능 지원 현황
+| 기능 | 상태 |
+|------|------|
+| `lsp_diagnostics` | ✅ 작동 |
+| `lsp_document_symbols` | ✅ 작동 |
+| `lsp_goto_definition` | ✅ 작동 |
+| `lsp_find_references` | ✅ 작동 |
+| `lsp_hover` | ⚠️ 부분적 |
+
 ## Project Structure
 
 ```
