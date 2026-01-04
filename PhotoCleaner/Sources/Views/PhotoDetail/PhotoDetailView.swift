@@ -16,6 +16,7 @@ struct PhotoDetailView: View {
     @State private var showMetadata = false
     @State private var deleteError: String?
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.photoAssetService) private var photoAssetService
 
     init(asset: PHAsset, issue: PhotoIssue? = nil) {
         self.asset = asset
@@ -141,49 +142,31 @@ struct PhotoDetailView: View {
     // MARK: - Methods
 
     private func loadFullImage() async {
-        let options = PHImageRequestOptions()
-        options.deliveryMode = .highQualityFormat
-        options.isNetworkAccessAllowed = true
-        options.resizeMode = .none
-
         let targetSize = CGSize(
             width: CGFloat(asset.pixelWidth),
             height: CGFloat(asset.pixelHeight)
         )
 
-        let result = await withCheckedContinuation { continuation in
-            PHImageManager.default().requestImage(
+        do {
+            let image = try await photoAssetService.requestUIImage(
                 for: asset,
                 targetSize: targetSize,
                 contentMode: .aspectFit,
-                options: options
-            ) { image, info in
-                let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
-                if !isDegraded {
-                    continuation.resume(returning: image)
-                }
-            }
+                request: .fullQualityNetworkAllowed
+            )
+            fullImage = image
+        } catch {
         }
-
-        fullImage = result
         isLoading = false
     }
 
     private func deletePhoto() {
         Task {
-            let assets = PHAsset.fetchAssets(withLocalIdentifiers: [asset.localIdentifier], options: nil)
-
             do {
-                try await PHPhotoLibrary.shared().performChanges {
-                    PHAssetChangeRequest.deleteAssets(assets)
-                }
-                await MainActor.run {
-                    dismiss()
-                }
+                try await photoAssetService.deleteAssets([asset])
+                dismiss()
             } catch {
-                await MainActor.run {
-                    deleteError = error.localizedDescription
-                }
+                deleteError = error.localizedDescription
             }
         }
     }

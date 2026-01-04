@@ -82,6 +82,7 @@ struct DuplicatePhotoCell: View {
     let onTap: () -> Void
     
     @Environment(\.displayScale) private var displayScale
+    @Environment(\.photoAssetService) private var photoAssetService
     @State private var thumbnail: UIImage?
     
     private let cellSize: CGFloat = 80
@@ -159,26 +160,17 @@ struct DuplicatePhotoCell: View {
     }
     
     private func loadThumbnail() async {
-        guard let asset = PHAsset.asset(withIdentifier: assetId) else { return }
+        guard let asset = photoAssetService.asset(withIdentifier: assetId) else { return }
         
-        let options = PHImageRequestOptions()
-        options.deliveryMode = .highQualityFormat
-        options.isNetworkAccessAllowed = false
-        options.resizeMode = .fast
-        
-        let size = CGSize(width: cellSize * displayScale, height: cellSize * displayScale)
-        
-        let result = await withCheckedContinuation { continuation in
-            PHImageManager.default().requestImage(
+        do {
+            let image = try await photoAssetService.requestGridThumbnailUIImage(
                 for: asset,
-                targetSize: size,
-                contentMode: .aspectFill,
-                options: options
-            ) { image, _ in
-                continuation.resume(returning: image)
-            }
+                targetHeight: cellSize,
+                aspectRatio: 1.0,
+                scale: displayScale
+            )
+            thumbnail = image
+        } catch {
         }
-        
-        thumbnail = result
     }
 }

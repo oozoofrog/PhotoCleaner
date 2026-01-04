@@ -7,6 +7,7 @@ import SwiftUI
 import Photos
 
 struct AllPhotosView: View {
+    @Environment(\.photoAssetService) private var photoAssetService
     @State private var assets: [PHAsset] = []
     @State private var selectedAssets: Set<String> = []
     @State private var isSelectionMode = false
@@ -195,22 +196,10 @@ struct AllPhotosView: View {
     }
 
     private func loadAllPhotos() async {
-        let fetchOptions = PHFetchOptions()
-        fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-
-        let result = PHAsset.fetchAssets(with: .image, options: fetchOptions)
-
-        var loadedAssets: [PHAsset] = []
-        loadedAssets.reserveCapacity(result.count)
-
-        result.enumerateObjects { asset, _, _ in
-            loadedAssets.append(asset)
-        }
-
-        await MainActor.run {
-            assets = loadedAssets
-            isLoading = false
-        }
+        let sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        let loadedAssets = photoAssetService.fetchAllPhotoAssets(sortedBy: sortDescriptors)
+        assets = loadedAssets
+        isLoading = false
     }
 
     private func deleteSelectedPhotos() {
@@ -227,25 +216,14 @@ struct AllPhotosView: View {
         defer { isDeleting = false }
 
         let identifiersToDelete = Array(selectedAssets)
-        let assetsToDelete = PHAsset.fetchAssets(
-            withLocalIdentifiers: identifiersToDelete,
-            options: nil
-        )
 
         do {
-            try await PHPhotoLibrary.shared().performChanges {
-                PHAssetChangeRequest.deleteAssets(assetsToDelete)
-            }
-
-            await MainActor.run {
-                assets.removeAll { selectedAssets.contains($0.localIdentifier) }
-                selectedAssets.removeAll()
-                isSelectionMode = false
-            }
+            try await photoAssetService.deleteAssets(withIdentifiers: identifiersToDelete)
+            assets.removeAll { selectedAssets.contains($0.localIdentifier) }
+            selectedAssets.removeAll()
+            isSelectionMode = false
         } catch {
-            await MainActor.run {
-                deleteError = error.localizedDescription
-            }
+            deleteError = error.localizedDescription
         }
     }
 }
