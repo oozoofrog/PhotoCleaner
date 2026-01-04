@@ -155,7 +155,9 @@ struct PhotoDetailView: View {
                 request: .fullQualityNetworkAllowed
             )
             fullImage = image
+        } catch is CancellationError {
         } catch {
+            fullImage = nil
         }
         isLoading = false
     }

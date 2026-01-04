@@ -84,6 +84,7 @@ struct DuplicatePhotoCell: View {
     @Environment(\.displayScale) private var displayScale
     @Environment(\.photoAssetService) private var photoAssetService
     @State private var thumbnail: UIImage?
+    @State private var loadFailed = false
     
     private let cellSize: CGFloat = 80
     
@@ -121,6 +122,13 @@ struct DuplicatePhotoCell: View {
             Image(uiImage: image)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
+        } else if loadFailed {
+            Rectangle()
+                .fill(AppColor.backgroundTertiary)
+                .overlay {
+                    Image(systemName: "photo")
+                        .foregroundStyle(AppColor.textTertiary)
+                }
         } else {
             Rectangle()
                 .fill(AppColor.backgroundTertiary)
@@ -160,7 +168,10 @@ struct DuplicatePhotoCell: View {
     }
     
     private func loadThumbnail() async {
-        guard let asset = photoAssetService.asset(withIdentifier: assetId) else { return }
+        guard let asset = photoAssetService.asset(withIdentifier: assetId) else {
+            loadFailed = true
+            return
+        }
         
         do {
             let image = try await photoAssetService.requestGridThumbnailUIImage(
@@ -170,7 +181,9 @@ struct DuplicatePhotoCell: View {
                 scale: displayScale
             )
             thumbnail = image
+        } catch is CancellationError {
         } catch {
+            loadFailed = true
         }
     }
 }

@@ -74,6 +74,10 @@ protocol PhotoAssetService: Sendable {
     func deleteAssets(withIdentifiers identifiers: [String]) async throws
 }
 
+/// PHImageManager와 PHPhotoLibrary는 Objective-C thread-safe 클래스이므로
+/// @unchecked Sendable 사용이 안전합니다.
+/// - imageManager: let으로 선언되어 초기화 후 변경 불가
+/// - photoLibrary: let으로 선언되어 초기화 후 변경 불가
 final class SystemPhotoAssetService: PhotoAssetService, @unchecked Sendable {
 
     private let imageManager: PHImageManager
@@ -165,7 +169,7 @@ final class SystemPhotoAssetService: PhotoAssetService, @unchecked Sendable {
         contentMode: PHImageContentMode,
         request: PhotoImageRequest
     ) async throws -> UIImage {
-        let requestIdBox = RequestIdBox()
+        let requestIdBox = RequestIdBox(imageManager: imageManager)
 
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
@@ -177,7 +181,7 @@ final class SystemPhotoAssetService: PhotoAssetService, @unchecked Sendable {
 
                 let hasResumed = HasResumedBox()
 
-                let requestId = PHImageManager.default().requestImage(
+                let requestId = self.imageManager.requestImage(
                     for: asset,
                     targetSize: targetSize,
                     contentMode: contentMode,
@@ -231,17 +235,28 @@ final class SystemPhotoAssetService: PhotoAssetService, @unchecked Sendable {
     }
 }
 
-private final class RequestIdBox: @unchecked Sendable {
+/// NSLock으로 동기화된 PHImageRequestID 박스.
+/// 취소 요청과 요청 ID 설정 간의 경쟁 상태를 안전하게 처리합니다.
+final class RequestIdBox: @unchecked Sendable {
     private let lock = NSLock()
+    private let imageManager: PHImageManager
     private nonisolated(unsafe) var requestId: PHImageRequestID?
     private nonisolated(unsafe) var isCancelled = false
+    
+    init(imageManager: PHImageManager = PHImageManager.default()) {
+        self.imageManager = imageManager
+    }
 
     nonisolated func setRequestId(_ id: PHImageRequestID) {
         lock.lock()
-        defer { lock.unlock() }
-        requestId = id
-        if isCancelled {
-            requestId = nil
+        let shouldCancel = isCancelled
+        if !shouldCancel {
+            requestId = id
+        }
+        lock.unlock()
+        
+        if shouldCancel {
+            imageManager.cancelImageRequest(id)
         }
     }
 
@@ -253,12 +268,14 @@ private final class RequestIdBox: @unchecked Sendable {
         lock.unlock()
         
         if let id {
-            PHImageManager.default().cancelImageRequest(id)
+            imageManager.cancelImageRequest(id)
         }
     }
 }
 
-private final class HasResumedBox: @unchecked Sendable {
+/// NSLock으로 보호되는 단일 실행 보장 박스.
+/// continuation이 한 번만 resume되도록 보장합니다.
+final class HasResumedBox: @unchecked Sendable {
     private let lock = NSLock()
     private nonisolated(unsafe) var hasResumed = false
 
