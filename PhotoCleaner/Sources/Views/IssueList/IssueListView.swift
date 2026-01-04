@@ -25,6 +25,7 @@ struct IssueListView: View {
     @Binding var selectedSizeOption: LargeFileSizeOption
     var onLargeFileSizeChange: (@Sendable (LargeFileSizeOption) async -> Void)?
 
+    @Environment(\.photoAssetService) private var photoAssetService
     @State private var selectedIssues: Set<String> = []
     @State private var isSelectionMode = false
     @State private var showDeleteConfirmation = false
@@ -303,7 +304,7 @@ struct IssueListView: View {
         var grouped: [DateFilter: [PhotoIssue]] = [:]
 
         for issue in issues {
-            guard let asset = PHAsset.asset(withIdentifier: issue.assetIdentifier),
+            guard let asset = photoAssetService.asset(withIdentifier: issue.assetIdentifier),
                   let creationDate = asset.creationDate else {
                 grouped[.older, default: []].append(issue)
                 continue
@@ -464,15 +465,8 @@ struct IssueListView: View {
             .filter { selectedIssues.contains($0.id) }
             .map(\.assetIdentifier)
 
-        let assetsToDelete = PHAsset.fetchAssets(
-            withLocalIdentifiers: identifiersToDelete,
-            options: nil
-        )
-
         do {
-            try await PHPhotoLibrary.shared().performChanges {
-                PHAssetChangeRequest.deleteAssets(assetsToDelete)
-            }
+            try await photoAssetService.deleteAssets(withIdentifiers: identifiersToDelete)
             selectedIssues.removeAll()
             isSelectionMode = false
         } catch {
@@ -496,15 +490,8 @@ struct IssueListView: View {
         
         let identifiersToDelete = group.duplicateAssetIdentifiers
         
-        let assetsToDelete = PHAsset.fetchAssets(
-            withLocalIdentifiers: identifiersToDelete,
-            options: nil
-        )
-        
         do {
-            try await PHPhotoLibrary.shared().performChanges {
-                PHAssetChangeRequest.deleteAssets(assetsToDelete)
-            }
+            try await photoAssetService.deleteAssets(withIdentifiers: identifiersToDelete)
         } catch {
             deleteError = error.localizedDescription
         }
@@ -520,6 +507,7 @@ struct PhotoThumbnailView: View {
     let onTap: () -> Void
 
     @Environment(\.displayScale) private var displayScale
+    @Environment(\.photoAssetService) private var photoAssetService
     @State private var thumbnail: UIImage?
     @State private var loadFailed = false
 
@@ -592,37 +580,21 @@ struct PhotoThumbnailView: View {
         }
     }
 
-    /// 썸네일 로드 (자연 비율에 맞는 크기로 요청)
-    /// - Note: deliveryMode = .highQualityFormat + isNetworkAccessAllowed = false 조합으로 단일 콜백 보장
     private func loadThumbnail() async {
-        guard let asset = PHAsset.asset(withIdentifier: issue.assetIdentifier) else {
+        guard let asset = photoAssetService.asset(withIdentifier: issue.assetIdentifier) else {
             loadFailed = true
             return
         }
 
-        let options = PHImageRequestOptions()
-        options.deliveryMode = .highQualityFormat  // degraded 이미지 없이 최종 이미지만 전달
-        options.isNetworkAccessAllowed = false     // 네트워크 로딩 없음 → 단일 콜백 보장
-        options.resizeMode = .fast
-
-        let targetHeight = ThumbnailSize.gridHeight
-        let targetWidth = targetHeight * issue.aspectRatio
-        let size = CGSize(width: targetWidth * displayScale, height: targetHeight * displayScale)
-
-        let result = await withCheckedContinuation { continuation in
-            PHImageManager.default().requestImage(
+        do {
+            let image = try await photoAssetService.requestGridThumbnailUIImage(
                 for: asset,
-                targetSize: size,
-                contentMode: .aspectFill,
-                options: options
-            ) { image, _ in
-                continuation.resume(returning: image)
-            }
-        }
-
-        if let image = result {
+                targetHeight: ThumbnailSize.gridHeight,
+                aspectRatio: issue.aspectRatio,
+                scale: displayScale
+            )
             thumbnail = image
-        } else {
+        } catch {
             loadFailed = true
         }
     }

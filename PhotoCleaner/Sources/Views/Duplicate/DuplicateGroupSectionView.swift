@@ -82,7 +82,9 @@ struct DuplicatePhotoCell: View {
     let onTap: () -> Void
     
     @Environment(\.displayScale) private var displayScale
+    @Environment(\.photoAssetService) private var photoAssetService
     @State private var thumbnail: UIImage?
+    @State private var loadFailed = false
     
     private let cellSize: CGFloat = 80
     
@@ -120,6 +122,13 @@ struct DuplicatePhotoCell: View {
             Image(uiImage: image)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
+        } else if loadFailed {
+            Rectangle()
+                .fill(AppColor.backgroundTertiary)
+                .overlay {
+                    Image(systemName: "photo")
+                        .foregroundStyle(AppColor.textTertiary)
+                }
         } else {
             Rectangle()
                 .fill(AppColor.backgroundTertiary)
@@ -159,26 +168,22 @@ struct DuplicatePhotoCell: View {
     }
     
     private func loadThumbnail() async {
-        guard let asset = PHAsset.asset(withIdentifier: assetId) else { return }
-        
-        let options = PHImageRequestOptions()
-        options.deliveryMode = .highQualityFormat
-        options.isNetworkAccessAllowed = false
-        options.resizeMode = .fast
-        
-        let size = CGSize(width: cellSize * displayScale, height: cellSize * displayScale)
-        
-        let result = await withCheckedContinuation { continuation in
-            PHImageManager.default().requestImage(
-                for: asset,
-                targetSize: size,
-                contentMode: .aspectFill,
-                options: options
-            ) { image, _ in
-                continuation.resume(returning: image)
-            }
+        guard let asset = photoAssetService.asset(withIdentifier: assetId) else {
+            loadFailed = true
+            return
         }
         
-        thumbnail = result
+        do {
+            let image = try await photoAssetService.requestGridThumbnailUIImage(
+                for: asset,
+                targetHeight: cellSize,
+                aspectRatio: 1.0,
+                scale: displayScale
+            )
+            thumbnail = image
+        } catch is CancellationError {
+        } catch {
+            loadFailed = true
+        }
     }
 }

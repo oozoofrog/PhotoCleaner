@@ -7,7 +7,7 @@
 
 import Photos
 import CryptoKit
-import Vision
+@preconcurrency import Vision
 import UIKit
 
 /// 스캔 진행 상태
@@ -81,7 +81,6 @@ struct ScanResult: Sendable {
     }
 }
 
-/// 사진 스캔 서비스
 actor PhotoScanService {
 
     // MARK: - Constants
@@ -89,11 +88,19 @@ actor PhotoScanService {
     private nonisolated static let progressUpdateInterval: Int = 100
     private nonisolated static let progressDebounceInterval: TimeInterval = 0.1
 
+    // MARK: - Dependencies
+
+    private let photoAssetService: any PhotoAssetService
+
     // MARK: - Properties
 
     private var cachedResult: ScanResult?
     private var lastProgressUpdate: Date = .distantPast
     private(set) var largeFileThreshold: Int64 = 10 * 1024 * 1024
+
+    init(photoAssetService: some PhotoAssetService) {
+        self.photoAssetService = photoAssetService
+    }
 
     func setLargeFileThreshold(_ threshold: LargeFileSizeOption) {
         largeFileThreshold = threshold.rawValue
@@ -716,49 +723,29 @@ actor PhotoScanService {
 
     private func computeFeaturePrint(for asset: PHAsset) async -> (featurePrint: VNFeaturePrintObservation, byteCount: Int64)? {
         let scale = await MainActor.run { UITraitCollection.current.displayScale }
-        let imageResult = await loadThumbnailImage(for: asset, targetSize: CGSize(width: 300, height: 300), scale: scale)
-        guard let cgImage = imageResult.image else { return nil }
-
-        return await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
+        let targetSize = CGSize(width: 300, height: 300)
+        
+        do {
+            let (cgImage, byteCount) = try await photoAssetService.requestThumbnailCGImageForVision(
+                for: asset,
+                pointSize: targetSize,
+                scale: scale
+            )
+            
+            return await Task.detached(priority: .userInitiated) {
                 let request = VNGenerateImageFeaturePrintRequest()
                 let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-
+                
                 do {
                     try handler.perform([request])
-                    guard let observation = request.results?.first else {
-                        continuation.resume(returning: nil)
-                        return
-                    }
-                    continuation.resume(returning: (observation, imageResult.byteCount))
+                    guard let observation = request.results?.first else { return nil }
+                    return (observation, byteCount)
                 } catch {
-                    continuation.resume(returning: nil)
+                    return nil
                 }
-            }
-        }
-    }
-
-    private func loadThumbnailImage(for asset: PHAsset, targetSize: CGSize, scale: CGFloat) async -> (image: CGImage?, byteCount: Int64) {
-        await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
-                let options = PHImageRequestOptions()
-                options.deliveryMode = .fastFormat
-                options.isNetworkAccessAllowed = false
-                options.resizeMode = .fast
-                options.isSynchronous = true
-
-                let size = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
-
-                PHImageManager.default().requestImage(
-                    for: asset,
-                    targetSize: size,
-                    contentMode: .aspectFill,
-                    options: options
-                ) { image, _ in
-                    let byteCount = Int64(asset.pixelWidth * asset.pixelHeight) / 4
-                    continuation.resume(returning: (image?.cgImage, byteCount))
-                }
-            }
+            }.value
+        } catch {
+            return nil
         }
     }
 

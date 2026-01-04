@@ -13,6 +13,7 @@ struct AssetThumbnailView: View {
     let onTap: () -> Void
 
     @Environment(\.displayScale) private var displayScale
+    @Environment(\.photoAssetService) private var photoAssetService
     @State private var thumbnail: UIImage?
     @State private var loadFailed = false
 
@@ -75,29 +76,16 @@ struct AssetThumbnailView: View {
     }
 
     private func loadThumbnail() async {
-        let options = PHImageRequestOptions()
-        options.deliveryMode = .highQualityFormat
-        options.isNetworkAccessAllowed = false
-        options.resizeMode = .fast
-
-        let targetHeight = ThumbnailSize.gridHeight
-        let targetWidth = targetHeight * aspectRatio
-        let size = CGSize(width: targetWidth * displayScale, height: targetHeight * displayScale)
-
-        let result = await withCheckedContinuation { continuation in
-            PHImageManager.default().requestImage(
+        do {
+            let image = try await photoAssetService.requestGridThumbnailUIImage(
                 for: asset,
-                targetSize: size,
-                contentMode: .aspectFill,
-                options: options
-            ) { image, _ in
-                continuation.resume(returning: image)
-            }
-        }
-
-        if let image = result {
+                targetHeight: ThumbnailSize.gridHeight,
+                aspectRatio: aspectRatio,
+                scale: displayScale
+            )
             thumbnail = image
-        } else {
+        } catch is CancellationError {
+        } catch {
             loadFailed = true
         }
     }

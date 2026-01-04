@@ -31,7 +31,7 @@ final class DashboardViewModel {
     private var currentScanTask: Task<Void, Never>?
 
     let permissionService: PhotoPermissionService
-    private let scanService = PhotoScanService()
+    private let scanService: PhotoScanService
 
     // MARK: - Computed Properties
 
@@ -59,8 +59,12 @@ final class DashboardViewModel {
 
     // MARK: - Initialization
 
-    init(permissionService: PhotoPermissionService) {
+    init(
+        permissionService: PhotoPermissionService,
+        photoAssetService: some PhotoAssetService = SystemPhotoAssetService()
+    ) {
         self.permissionService = permissionService
+        self.scanService = PhotoScanService(photoAssetService: photoAssetService)
         updateAppState()
     }
 
