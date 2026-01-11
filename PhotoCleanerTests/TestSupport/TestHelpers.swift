@@ -42,4 +42,15 @@ enum TestDataGenerator {
     static func randomAspectRatio() -> CGFloat {
         CGFloat.random(in: 0.1...10.0)
     }
+
+    /// 랜덤 AssetMetadata 생성
+    static func randomAssetMetadata() -> AssetMetadata {
+        AssetMetadata(
+            assetId: UUID().uuidString,
+            pixelWidth: Int.random(in: 100...5000),
+            pixelHeight: Int.random(in: 100...5000),
+            creationDate: Date().addingTimeInterval(TimeInterval.random(in: -3600*24*365...0)),
+            byteCount: Int64.random(in: 1024...1024*1024*10)
+        )
+    }
 }
