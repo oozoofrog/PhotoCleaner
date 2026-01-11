@@ -22,6 +22,7 @@ struct IssueListView: View {
     let issueType: IssueType
     let issues: [PhotoIssue]
     var duplicateGroups: [DuplicateGroup] = []
+    @Bindable var settings = AppSettings.shared
     @Binding var selectedSizeOption: LargeFileSizeOption
     var onLargeFileSizeChange: (@Sendable (LargeFileSizeOption) async -> Void)?
 
@@ -41,7 +42,19 @@ struct IssueListView: View {
         if issueType == .largeFile {
             return issues.sorted { ($0.metadata.fileSize ?? 0) > ($1.metadata.fileSize ?? 0) }
         }
-        return issues
+
+        switch settings.sortOrder {
+        case .date:
+            // 날짜순 (최신순) - issues는 이미 스캔 시 날짜순으로 정렬됨
+            // 만약 나중에 다른 정렬이 추가되거나 섞였다면 여기서 다시 정렬
+            return issues
+        case .size:
+            return issues.sorted { ($0.metadata.fileSize ?? 0) > ($1.metadata.fileSize ?? 0) }
+        case .name:
+            // 이름순 정렬은 성능 이슈로 현재 지원하지 않거나 asset 로딩 필요
+            // 일단 날짜순으로 fallback
+            return issues
+        }
     }
 
     var body: some View {

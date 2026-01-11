@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Photos
+import SwiftData
 
 /// 앱 전체 상태
 enum AppState {
@@ -32,6 +33,8 @@ final class DashboardViewModel {
 
     let permissionService: PhotoPermissionService
     private let scanService: PhotoScanService
+    private let cacheStore: PhotoCacheStoreProtocol?
+    private let syncService: PhotoLibrarySyncService?
 
     // MARK: - Computed Properties
 
@@ -60,16 +63,30 @@ final class DashboardViewModel {
     // MARK: - Initialization
 
     init(
-        permissionService: PhotoPermissionService,
-        photoAssetService: some PhotoAssetService = SystemPhotoAssetService()
+        permissionService: PhotoPermissionService = PhotoPermissionService(),
+        photoAssetService: some PhotoAssetService = SystemPhotoAssetService(),
+        cacheStore: PhotoCacheStoreProtocol? = nil
     ) {
         self.permissionService = permissionService
         self.scanService = PhotoScanService(photoAssetService: photoAssetService)
+        self.cacheStore = cacheStore
+        if let cacheStore = cacheStore {
+            self.syncService = PhotoLibrarySyncService(
+                cacheStore: cacheStore,
+                libraryProvider: RealPhotoLibraryProvider()
+            )
+        } else {
+            self.syncService = nil
+        }
         updateAppState()
     }
 
-    convenience init() {
-        self.init(permissionService: PhotoPermissionService())
+    convenience init(cacheStore: PhotoCacheStoreProtocol) {
+        self.init(
+            permissionService: PhotoPermissionService(),
+            photoAssetService: SystemPhotoAssetService(),
+            cacheStore: cacheStore
+        )
     }
 
     // MARK: - Public Methods
@@ -93,6 +110,16 @@ final class DashboardViewModel {
         updateAppState()
     }
 
+    /// 캐시와 사진 라이브러리 동기화
+    func performInitialSync() async {
+        guard let syncService = syncService else { return }
+        await syncService.performFullSync()
+        
+        if AppSettings.shared.autoScanEnabled {
+            await startScan()
+        }
+    }
+
     /// 전체 검사 시작
     func startScan() async {
         guard permissionService.status.canAccess else {
@@ -103,8 +130,15 @@ final class DashboardViewModel {
         appState = .scanning
         scanProgress = ScanProgress(phase: .preparing, current: 0, total: 0)
 
+        // 설정 가져오기
+        let duplicateMode = AppSettings.shared.duplicateDetectionMode
+        let similarityThreshold = AppSettings.shared.similarityThreshold
+
         do {
-            let result = try await scanService.scanAll { @MainActor [weak self] progress in
+            let result = try await scanService.scanAll(
+                duplicateDetectionMode: duplicateMode,
+                similarityThreshold: similarityThreshold
+            ) { @MainActor [weak self] progress in
                 self?.scanProgress = progress
             }
 
@@ -125,8 +159,16 @@ final class DashboardViewModel {
         appState = .scanning
         scanProgress = ScanProgress(phase: .preparing, current: 0, total: 0)
 
+        // 설정 가져오기
+        let duplicateMode = AppSettings.shared.duplicateDetectionMode
+        let similarityThreshold = AppSettings.shared.similarityThreshold
+
         do {
-            let result = try await scanService.scan(for: issueTypes) { @MainActor [weak self] progress in
+            let result = try await scanService.scan(
+                for: issueTypes,
+                duplicateDetectionMode: duplicateMode,
+                similarityThreshold: similarityThreshold
+            ) { @MainActor [weak self] progress in
                 self?.scanProgress = progress
             }
 

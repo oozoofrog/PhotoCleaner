@@ -110,6 +110,8 @@ actor PhotoScanService {
     // MARK: - Public Methods
 
     func scanAll(
+        duplicateDetectionMode: DuplicateDetectionMode = .includeSimilar,
+        similarityThreshold: SimilarityThreshold = .percent95,
         progressHandler: @escaping @MainActor @Sendable (ScanProgress) -> Void
     ) async throws -> ScanResult {
         await progressHandler(ScanProgress(phase: .preparing, current: 0, total: 0))
@@ -137,12 +139,20 @@ actor PhotoScanService {
         let duplicateResult = await scanExactDuplicates(assets: assets, progressHandler: progressHandler)
         issues.append(contentsOf: duplicateResult.issues)
 
-        let exactDuplicateAssetIds = Set(duplicateResult.groups.flatMap { $0.assetIdentifiers })
-        let remainingAssets = assets.filter { !exactDuplicateAssetIds.contains($0.localIdentifier) }
-        let similarResult = await scanSimilarPhotos(assets: remainingAssets, progressHandler: progressHandler)
-        issues.append(contentsOf: similarResult.issues)
+        var allDuplicateGroups = duplicateResult.groups
 
-        let allDuplicateGroups = duplicateResult.groups + similarResult.groups
+        if duplicateDetectionMode == .includeSimilar {
+            let exactDuplicateAssetIds = Set(duplicateResult.groups.flatMap { $0.assetIdentifiers })
+            let remainingAssets = assets.filter { !exactDuplicateAssetIds.contains($0.localIdentifier) }
+            
+            let similarResult = await scanSimilarPhotos(
+                assets: remainingAssets,
+                similarityThreshold: duplicateDetectionMode == .includeSimilar ? similarityThreshold.floatValue : 1.0,
+                progressHandler: progressHandler
+            )
+            issues.append(contentsOf: similarResult.issues)
+            allDuplicateGroups.append(contentsOf: similarResult.groups)
+        }
 
         let summaries = createSummaries(from: issues)
 
@@ -163,6 +173,8 @@ actor PhotoScanService {
 
     func scan(
         for issueTypes: [IssueType],
+        duplicateDetectionMode: DuplicateDetectionMode = .includeSimilar,
+        similarityThreshold: SimilarityThreshold = .percent95,
         progressHandler: @escaping @MainActor @Sendable (ScanProgress) -> Void
     ) async throws -> ScanResult {
         await progressHandler(ScanProgress(phase: .preparing, current: 0, total: 0))
@@ -201,11 +213,18 @@ actor PhotoScanService {
             issues.append(contentsOf: duplicateResult.issues)
             duplicateGroups = duplicateResult.groups
 
-            let exactDuplicateAssetIds = Set(duplicateResult.groups.flatMap { $0.assetIdentifiers })
-            let remainingAssets = assets.filter { !exactDuplicateAssetIds.contains($0.localIdentifier) }
-            let similarResult = await scanSimilarPhotos(assets: remainingAssets, progressHandler: progressHandler)
-            issues.append(contentsOf: similarResult.issues)
-            duplicateGroups.append(contentsOf: similarResult.groups)
+            if duplicateDetectionMode == .includeSimilar {
+                let exactDuplicateAssetIds = Set(duplicateResult.groups.flatMap { $0.assetIdentifiers })
+                let remainingAssets = assets.filter { !exactDuplicateAssetIds.contains($0.localIdentifier) }
+                
+                let similarResult = await scanSimilarPhotos(
+                    assets: remainingAssets,
+                    similarityThreshold: similarityThreshold.floatValue,
+                    progressHandler: progressHandler
+                )
+                issues.append(contentsOf: similarResult.issues)
+                duplicateGroups.append(contentsOf: similarResult.groups)
+            }
         }
 
         let summaries = createSummaries(from: issues)
