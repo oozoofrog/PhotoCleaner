@@ -20,11 +20,9 @@ struct DashboardView: View {
                 case .needsPermission:
                     PermissionRequestView(viewModel: viewModel)
 
-                case .ready:
+                case .ready, .scanning:
+                    // 스캔 중에도 Dashboard 표시 (실시간 업데이트)
                     dashboardContent
-
-                case .scanning:
-                    ScanningView(progress: viewModel.scanProgress)
 
                 case .error(let message):
                     ErrorView(message: message) {
@@ -99,18 +97,27 @@ struct DashboardView: View {
                     totalIssues: viewModel.totalIssueCount,
                     lastScanDate: viewModel.formattedLastScanDate,
                     isScanning: viewModel.isScanning,
+                    scanProgress: viewModel.scanProgress,
+                    liveIssueCount: viewModel.liveIssueCount,
+                    scanWasCancelled: viewModel.scanWasCancelled,
+                    cancelledProcessedCount: viewModel.cancelledProcessedCount,
                     onScan: {
                         Task { await viewModel.startScan() }
+                    },
+                    onCancel: {
+                        viewModel.cancelScan()
                     },
                     onViewAllPhotos: {
                         showAllPhotos = true
                     }
                 )
 
-                if viewModel.hasScanned {
+                // 스캔 중에도 이슈 카드 표시 (hasScanned 또는 isScanning)
+                if viewModel.hasScanned || viewModel.isScanning {
                     issueCardsSection
 
-                    if viewModel.hasDuplicates {
+                    // 중복 섹션 (스캔 중이면 라이브 데이터 사용)
+                    if viewModel.isScanning ? viewModel.liveDuplicateGroupCount > 0 : viewModel.hasDuplicates {
                         duplicateSection
                     }
                 }
@@ -142,10 +149,12 @@ struct DashboardView: View {
                 ForEach(viewModel.displayIssueTypes) { issueType in
                     IssueCard(
                         issueType: issueType,
-                        count: viewModel.summary(for: issueType)?.count ?? 0
+                        count: viewModel.displayCount(for: issueType),
+                        isUpdating: viewModel.isScanning
                     ) {
                         selectedIssueType = issueType
                     }
+                    .disabled(viewModel.isScanning)
                 }
             }
         }
@@ -158,13 +167,23 @@ struct DashboardView: View {
                 .font(Typography.headline)
                 .foregroundStyle(AppColor.textPrimary)
 
+            // 스캔 중이면 라이브 데이터 사용
+            let groupCount = viewModel.isScanning
+                ? viewModel.liveDuplicateGroupCount
+                : viewModel.duplicateSummary.groupCount
+            let duplicateCount = viewModel.isScanning
+                ? viewModel.liveSummaries[.duplicate] ?? 0
+                : viewModel.duplicateSummary.duplicateCount
+
             DuplicateCard(
-                groupCount: viewModel.duplicateSummary.groupCount,
-                duplicateCount: viewModel.duplicateSummary.duplicateCount,
-                potentialSavings: viewModel.formattedPotentialSavings
+                groupCount: groupCount,
+                duplicateCount: duplicateCount,
+                potentialSavings: viewModel.isScanning ? "계산 중..." : viewModel.formattedPotentialSavings,
+                isUpdating: viewModel.isScanning
             ) {
                 selectedIssueType = .duplicate
             }
+            .disabled(viewModel.isScanning)
         }
     }
 }
@@ -173,6 +192,7 @@ struct DuplicateCard: View {
     let groupCount: Int
     let duplicateCount: Int
     let potentialSavings: String
+    var isUpdating: Bool = false
     let onTap: () -> Void
 
     var body: some View {
@@ -184,20 +204,41 @@ struct DuplicateCard: View {
                             .font(.system(size: IconSize.lg))
                             .foregroundStyle(AppColor.primary)
 
-                        Text("중복 그룹 \(groupCount)개")
-                            .font(Typography.headline)
-                            .foregroundStyle(AppColor.textPrimary)
+                        HStack(spacing: Spacing.xs) {
+                            Text("중복 그룹 ")
+                                .font(Typography.headline)
+                                .foregroundStyle(AppColor.textPrimary)
+                            Text("\(groupCount)")
+                                .font(Typography.headline)
+                                .foregroundStyle(AppColor.textPrimary)
+                                .contentTransition(.numericText())
+                                .animation(.spring(response: 0.3), value: groupCount)
+                            Text("개")
+                                .font(Typography.headline)
+                                .foregroundStyle(AppColor.textPrimary)
+                            if isUpdating {
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                            }
+                        }
                     }
 
-                    Text("\(duplicateCount)장 정리 시 \(potentialSavings) 확보")
-                        .font(Typography.subheadline)
-                        .foregroundStyle(AppColor.textSecondary)
+                    HStack(spacing: 0) {
+                        Text("\(duplicateCount)")
+                            .contentTransition(.numericText())
+                            .animation(.spring(response: 0.3), value: duplicateCount)
+                        Text("장 정리 시 \(potentialSavings) 확보")
+                    }
+                    .font(Typography.subheadline)
+                    .foregroundStyle(AppColor.textSecondary)
                 }
 
                 Spacer()
 
-                Image(systemName: "chevron.right")
-                    .foregroundStyle(AppColor.textTertiary)
+                if !isUpdating {
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(AppColor.textTertiary)
+                }
             }
             .padding(Spacing.md)
             .background(AppColor.backgroundSecondary)
@@ -214,41 +255,99 @@ struct SummaryCard: View {
     let totalIssues: Int
     let lastScanDate: String?
     let isScanning: Bool
+    let scanProgress: ScanProgress?
+    var liveIssueCount: Int = 0
+    var scanWasCancelled: Bool = false
+    var cancelledProcessedCount: Int = 0
     let onScan: () -> Void
+    var onCancel: (() -> Void)?
     var onViewAllPhotos: (() -> Void)?
+
+    /// 현재 표시할 이슈 개수
+    private var displayIssueCount: Int {
+        isScanning ? liveIssueCount : totalIssues
+    }
+
+    /// 현재 표시할 사진 개수
+    private var displayPhotoCount: Int {
+        if isScanning, let progress = scanProgress {
+            return progress.total > 0 ? progress.total : totalPhotos
+        }
+        return totalPhotos
+    }
 
     var body: some View {
         VStack(spacing: Spacing.md) {
+            // 스캔 중 인라인 프로그레스 바
+            if isScanning, let progress = scanProgress, progress.total > 0 {
+                VStack(spacing: Spacing.xs) {
+                    ProgressView(value: progress.progress)
+                        .progressViewStyle(.linear)
+                        .tint(AppColor.primary)
+
+                    HStack {
+                        Text(progress.displayText)
+                            .font(Typography.caption)
+                            .foregroundStyle(AppColor.textSecondary)
+                        Spacer()
+                        Text("\(Int(progress.progress * 100))%")
+                            .font(Typography.caption)
+                            .foregroundStyle(AppColor.textTertiary)
+                    }
+                }
+            }
+
             HStack {
                 VStack(alignment: .leading, spacing: Spacing.xs) {
                     Text("전체 요약")
                         .font(Typography.caption)
                         .foregroundStyle(AppColor.textSecondary)
 
-                    if totalPhotos > 0 {
+                    if displayPhotoCount > 0 || isScanning {
                         Button {
                             onViewAllPhotos?()
                         } label: {
                             HStack(spacing: Spacing.xs) {
-                                Text("\(totalPhotos.formatted())장")
+                                Text("\(displayPhotoCount.formatted())장")
                                     .font(Typography.headline)
                                     .foregroundStyle(AppColor.primary)
-                                Text("중 \(totalIssues)장에 문제 발견")
+                                Text("중 ")
                                     .font(Typography.headline)
                                     .foregroundStyle(AppColor.textPrimary)
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: IconSize.sm))
-                                    .foregroundStyle(AppColor.textTertiary)
+                                // 실시간 이슈 카운트 (애니메이션)
+                                Text("\(displayIssueCount)")
+                                    .font(Typography.headline)
+                                    .foregroundStyle(AppColor.textPrimary)
+                                    .contentTransition(.numericText())
+                                    .animation(.spring(response: 0.3), value: displayIssueCount)
+                                Text("장에 문제 발견")
+                                    .font(Typography.headline)
+                                    .foregroundStyle(AppColor.textPrimary)
+                                if !isScanning {
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: IconSize.sm))
+                                        .foregroundStyle(AppColor.textTertiary)
+                                }
                             }
                         }
                         .buttonStyle(.plain)
+                        .disabled(isScanning)
                     } else {
                         Text("검사를 시작해 주세요")
                             .font(Typography.headline)
                             .foregroundStyle(AppColor.textPrimary)
                     }
 
-                    if let lastScan = lastScanDate {
+                    // 마지막 스캔 날짜 또는 스캔 상태
+                    if isScanning {
+                        Text("검사 중...")
+                            .font(Typography.caption)
+                            .foregroundStyle(AppColor.primary)
+                    } else if scanWasCancelled {
+                        Text("검사가 취소되었습니다 (\(cancelledProcessedCount)장 처리됨)")
+                            .font(Typography.caption)
+                            .foregroundStyle(AppColor.warning)
+                    } else if let lastScan = lastScanDate {
                         Text("마지막 검사: \(lastScan)")
                             .font(Typography.caption)
                             .foregroundStyle(AppColor.textTertiary)
@@ -257,22 +356,37 @@ struct SummaryCard: View {
 
                 Spacer()
 
-                if totalIssues > 0 {
-                    Text("\(totalIssues)")
+                if displayIssueCount > 0 {
+                    Text("\(displayIssueCount)")
                         .font(Typography.largeNumber)
                         .foregroundStyle(AppColor.warning)
+                        .contentTransition(.numericText())
+                        .animation(.spring(response: 0.3), value: displayIssueCount)
                 }
             }
 
-            Button(action: onScan) {
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                    Text(totalPhotos > 0 ? "다시 검사하기" : "검사 시작하기")
+            // 스캔/취소 버튼
+            if isScanning {
+                Button {
+                    onCancel?()
+                } label: {
+                    HStack {
+                        Image(systemName: "xmark.circle")
+                        Text("검사 취소하기")
+                    }
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: .infinity)
+                .buttonStyle(.destructive)
+            } else {
+                Button(action: onScan) {
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                        Text(totalPhotos > 0 ? "다시 검사하기" : "검사 시작하기")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.primary)
             }
-            .buttonStyle(.primary)
-            .disabled(isScanning)
         }
         .padding(Spacing.lg)
         .background(AppColor.backgroundSecondary)
@@ -285,7 +399,10 @@ struct SummaryCard: View {
 struct IssueCard: View {
     let issueType: IssueType
     let count: Int
+    var isUpdating: Bool = false
     let onTap: () -> Void
+
+    @State private var isAnimating = false
 
     var body: some View {
         Button(action: onTap) {
@@ -302,6 +419,9 @@ struct IssueCard: View {
                         Text("\(count)")
                             .font(Typography.mediumNumber)
                             .foregroundStyle(issueType.color)
+                            .contentTransition(.numericText())
+                            .scaleEffect(isAnimating ? 1.15 : 1.0)
+                            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: isAnimating)
                     }
                 }
 
@@ -311,16 +431,46 @@ struct IssueCard: View {
                     .foregroundStyle(AppColor.textPrimary)
 
                 // 상태
-                Text(count > 0 ? "\(count)장 발견" : "문제 없음")
-                    .font(Typography.caption)
-                    .foregroundStyle(AppColor.textSecondary)
+                Group {
+                    if isUpdating {
+                        HStack(spacing: Spacing.xs) {
+                            Text("\(count)장 발견")
+                            ProgressView()
+                                .scaleEffect(0.7)
+                        }
+                    } else {
+                        Text(count > 0 ? "\(count)장 발견" : "문제 없음")
+                    }
+                }
+                .font(Typography.caption)
+                .foregroundStyle(AppColor.textSecondary)
             }
             .padding(Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(AppColor.backgroundSecondary)
             .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md))
+            .overlay(
+                RoundedRectangle(cornerRadius: CornerRadius.md)
+                    .strokeBorder(
+                        isAnimating ? issueType.color.opacity(0.3) : Color.clear,
+                        lineWidth: 2
+                    )
+            )
         }
         .buttonStyle(.plain)
+        .onChange(of: count) { oldValue, newValue in
+            // 카운트 증가 시 애니메이션
+            if newValue > oldValue && isUpdating {
+                withAnimation {
+                    isAnimating = true
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    withAnimation {
+                        isAnimating = false
+                    }
+                }
+            }
+        }
     }
 }
 

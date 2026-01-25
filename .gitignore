@@ -59,4 +59,7 @@ buildServer.json
 *.dSYM
 *.app
 .build-log.txt
+
+# IDE & Tools
 .cursor/
+.omc/
