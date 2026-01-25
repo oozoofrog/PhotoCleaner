@@ -712,12 +712,16 @@ actor PhotoScanService {
         let total = assets.count
 
         for (_, bucketAssets) in buckets {
-            // Parallelize Vision Processing within Bucket
+            // Parallelize Vision Processing within Bucket (with throttling)
             let candidates = await withTaskGroup(of: FeaturePrintCandidate?.self, returning: [FeaturePrintCandidate].self) { group in
-                for asset in bucketAssets {
+                var iterator = bucketAssets.makeIterator()
+                var bucketCandidates: [FeaturePrintCandidate] = []
+
+                // Start initial batch of concurrent tasks (limited to maxConcurrentFeaturePrints)
+                for _ in 0..<Self.maxConcurrentFeaturePrints {
+                    guard let asset = iterator.next() else { break }
                     group.addTask(priority: .userInitiated) {
                         guard let result = await self.computeFeaturePrint(for: asset) else { return nil }
-                        
                         let bucketKey = self.computeBucketKey(for: asset)
                         return FeaturePrintCandidate(
                             assetId: asset.localIdentifier,
@@ -730,8 +734,8 @@ actor PhotoScanService {
                         )
                     }
                 }
-                
-                var bucketCandidates: [FeaturePrintCandidate] = []
+
+                // As tasks complete, add new ones to maintain concurrency limit
                 for await result in group {
                     processedCount += 1
                     if self.shouldUpdateProgress(index: processedCount) {
@@ -742,9 +746,26 @@ actor PhotoScanService {
                             currentIssueType: .duplicate
                         ))
                     }
-                    
+
                     if let candidate = result {
                         bucketCandidates.append(candidate)
+                    }
+
+                    // Add next task if there are more assets
+                    if let nextAsset = iterator.next() {
+                        group.addTask(priority: .userInitiated) {
+                            guard let result = await self.computeFeaturePrint(for: nextAsset) else { return nil }
+                            let bucketKey = self.computeBucketKey(for: nextAsset)
+                            return FeaturePrintCandidate(
+                                assetId: nextAsset.localIdentifier,
+                                featurePrint: result.featurePrint,
+                                pixelWidth: nextAsset.pixelWidth,
+                                pixelHeight: nextAsset.pixelHeight,
+                                creationDate: nextAsset.creationDate,
+                                byteCount: result.byteCount,
+                                bucketKey: bucketKey
+                            )
+                        }
                     }
                 }
                 return bucketCandidates
