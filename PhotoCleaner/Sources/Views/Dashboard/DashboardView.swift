@@ -597,6 +597,29 @@ struct ErrorView: View {
 
 // MARK: - Preview
 
+#if DEBUG
 #Preview("Dashboard - Ready") {
-    DashboardView(viewModel: DashboardViewModel())
+    DashboardView(viewModel: .previewReady())
+        .environment(\.photoAssetService, PreviewPhotoAssetService.shared)
 }
+
+#Preview("Dashboard - Scanning") {
+    DashboardView(viewModel: .previewScanning())
+        .environment(\.photoAssetService, PreviewPhotoAssetService.shared)
+}
+
+#Preview("Dashboard - Empty") {
+    DashboardView(viewModel: .previewEmpty())
+        .environment(\.photoAssetService, PreviewPhotoAssetService.shared)
+}
+
+#Preview("Dashboard - Needs Permission") {
+    DashboardView(viewModel: .previewNeedsPermission())
+        .environment(\.photoAssetService, PreviewPhotoAssetService.shared)
+}
+
+#Preview("Dashboard - Error") {
+    DashboardView(viewModel: .previewError())
+        .environment(\.photoAssetService, PreviewPhotoAssetService.shared)
+}
+#endif

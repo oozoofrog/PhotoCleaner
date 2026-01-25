@@ -230,8 +230,48 @@ struct AllPhotosView: View {
 
 // MARK: - Preview
 
-#Preview("All Photos") {
+#if DEBUG
+/// AllPhotosView loads PHAssets via photoAssetService.
+/// PreviewPhotoAssetService returns empty arrays, so previews show the empty/loading states.
+#Preview("All Photos - Loading") {
+    NavigationStack {
+        VStack(spacing: Spacing.lg) {
+            ProgressView()
+                .scaleEffect(1.5)
+            Text("사진을 불러오는 중...")
+                .font(Typography.body)
+                .foregroundStyle(AppColor.textSecondary)
+        }
+        .navigationTitle("전체 사진")
+        .navigationBarTitleDisplayMode(.large)
+    }
+}
+
+#Preview("All Photos - Empty") {
+    NavigationStack {
+        VStack(spacing: Spacing.lg) {
+            Image(systemName: "photo.on.rectangle")
+                .font(.system(size: IconSize.hero))
+                .foregroundStyle(AppColor.textTertiary)
+
+            Text("사진 없음")
+                .font(Typography.title)
+                .foregroundStyle(AppColor.textPrimary)
+
+            Text("사진첩에 사진이 없습니다.")
+                .font(Typography.body)
+                .foregroundStyle(AppColor.textSecondary)
+        }
+        .padding(Spacing.xl)
+        .navigationTitle("전체 사진")
+        .navigationBarTitleDisplayMode(.large)
+    }
+}
+
+#Preview("All Photos - With Service") {
     NavigationStack {
         AllPhotosView()
     }
+    .environment(\.photoAssetService, PreviewPhotoAssetService.shared)
 }
+#endif

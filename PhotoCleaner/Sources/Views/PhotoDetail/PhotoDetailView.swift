@@ -252,8 +252,92 @@ struct PhotoMetadataSheet: View {
 
 // MARK: - Preview
 
-#Preview("Photo Detail") {
+#if DEBUG
+/// PhotoDetailView requires a real PHAsset which is not available in Preview.
+/// These previews demonstrate the visual layout using static content.
+#Preview("Photo Detail - With Image") {
     NavigationStack {
-        PhotoDetailView(asset: PHAsset())
+        GeometryReader { geometry in
+            ZStack {
+                Color.black.ignoresSafeArea()
+
+                // Simulated image
+                Image(systemName: "photo.artframe")
+                    .font(.system(size: 100))
+                    .foregroundStyle(.white.opacity(0.3))
+
+                VStack {
+                    Spacer()
+                    // Bottom info bar simulation
+                    VStack(spacing: Spacing.sm) {
+                        HStack {
+                            Image(systemName: "camera.viewfinder")
+                                .foregroundStyle(AppColor.warning)
+                            Text("스크린샷")
+                                .font(Typography.subheadline)
+                                .foregroundStyle(.white)
+                            Spacer()
+                        }
+
+                        HStack {
+                            Text("2025년 1월 25일 오후 3:30")
+                                .font(Typography.caption)
+                                .foregroundStyle(.white.opacity(0.7))
+                            Spacer()
+                            Text("1170 × 2532")
+                                .font(Typography.caption)
+                                .foregroundStyle(.white.opacity(0.7))
+                        }
+                    }
+                    .padding(Spacing.md)
+                    .background(.ultraThinMaterial.opacity(0.8))
+                }
+            }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Image(systemName: "ellipsis.circle")
+                    .foregroundStyle(.white)
+            }
+        }
     }
 }
+
+#Preview("Photo Detail - Loading") {
+    NavigationStack {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            ProgressView()
+                .tint(.white)
+                .scaleEffect(1.5)
+        }
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+#Preview("Metadata Sheet") {
+    NavigationStack {
+        List {
+            Section("문제 정보") {
+                LabeledContent("유형", value: "스크린샷")
+                LabeledContent("심각도", value: "낮음")
+            }
+
+            Section("사진 정보") {
+                LabeledContent("해상도", value: "1170 × 2532")
+                LabeledContent("촬영일", value: "2025년 1월 25일 오후 3:30")
+                LabeledContent("미디어 타입", value: "사진")
+            }
+
+            Section("위치") {
+                Text("위치 정보 없음")
+                    .foregroundStyle(AppColor.textSecondary)
+            }
+        }
+        .navigationTitle("사진 정보")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+#endif

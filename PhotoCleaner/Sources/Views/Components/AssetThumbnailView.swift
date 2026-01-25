@@ -93,12 +93,56 @@ struct AssetThumbnailView: View {
 
 // MARK: - Preview
 
-#Preview("Asset Thumbnail") {
-    AssetThumbnailView(
-        asset: PHAsset(),
-        isSelected: false,
-        isSelectionMode: false,
-        onTap: {}
-    )
+#if DEBUG
+/// AssetThumbnailView requires a real PHAsset which is not available in Preview.
+/// These previews demonstrate the visual states using static content.
+#Preview("Thumbnail - Normal") {
+    // Static preview showing the expected appearance
+    ZStack {
+        RoundedRectangle(cornerRadius: CornerRadius.sm)
+            .fill(AppColor.backgroundSecondary)
+            .overlay {
+                Image(systemName: "photo.fill")
+                    .font(.system(size: 30))
+                    .foregroundStyle(AppColor.textTertiary)
+            }
+    }
     .frame(width: 100, height: 100)
 }
+
+#Preview("Thumbnail - Selected") {
+    ZStack(alignment: .topTrailing) {
+        RoundedRectangle(cornerRadius: CornerRadius.sm)
+            .fill(AppColor.backgroundSecondary)
+            .overlay {
+                Image(systemName: "photo.fill")
+                    .font(.system(size: 30))
+                    .foregroundStyle(AppColor.textTertiary)
+            }
+
+        Image(systemName: "checkmark.circle.fill")
+            .font(.system(size: IconSize.md))
+            .foregroundStyle(AppColor.primary)
+            .background(
+                Circle()
+                    .fill(.white)
+                    .frame(width: IconSize.md, height: IconSize.md)
+            )
+            .padding(Spacing.xs)
+    }
+    .frame(width: 100, height: 100)
+    .overlay {
+        RoundedRectangle(cornerRadius: CornerRadius.sm)
+            .stroke(AppColor.primary, lineWidth: 3)
+    }
+}
+
+#Preview("Thumbnail - Loading") {
+    RoundedRectangle(cornerRadius: CornerRadius.sm)
+        .fill(AppColor.backgroundSecondary)
+        .overlay {
+            ProgressView()
+        }
+        .frame(width: 100, height: 100)
+}
+#endif

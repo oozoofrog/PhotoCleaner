@@ -615,7 +615,19 @@ struct PhotoThumbnailView: View {
 
 // MARK: - Preview
 
-#Preview("Issue List") {
+#if DEBUG
+#Preview("Issue List - Screenshots") {
+    NavigationStack {
+        IssueListView(
+            issueType: .screenshot,
+            issues: PreviewSampleData.screenshots,
+            selectedSizeOption: .constant(.mb10)
+        )
+        .environment(\.photoAssetService, PreviewPhotoAssetService.shared)
+    }
+}
+
+#Preview("Issue List - Empty") {
     NavigationStack {
         IssueListView(
             issueType: .screenshot,
@@ -624,3 +636,27 @@ struct PhotoThumbnailView: View {
         )
     }
 }
+
+#Preview("Issue List - Large Files") {
+    NavigationStack {
+        IssueListView(
+            issueType: .largeFile,
+            issues: PreviewSampleData.largeFiles,
+            selectedSizeOption: .constant(.mb10)
+        )
+        .environment(\.photoAssetService, PreviewPhotoAssetService.shared)
+    }
+}
+
+#Preview("Issue List - Duplicates") {
+    NavigationStack {
+        IssueListView(
+            issueType: .duplicate,
+            issues: PreviewSampleData.duplicateIssues,
+            duplicateGroups: PreviewSampleData.duplicateGroups,
+            selectedSizeOption: .constant(.mb10)
+        )
+        .environment(\.photoAssetService, PreviewPhotoAssetService.shared)
+    }
+}
+#endif
