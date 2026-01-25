@@ -236,3 +236,88 @@ enum LargeFileSizeOption: Int64, CaseIterable, Identifiable {
 
     var bytes: Int64 { rawValue }
 }
+
+// MARK: - Preview Support
+#if DEBUG
+extension PhotoIssue {
+    /// Preview용 생성자 - PHAsset 불필요
+    init(
+        previewId: String,
+        assetIdentifier: String,
+        issueType: IssueType,
+        severity: IssueSeverity? = nil,
+        metadata: IssueMetadata = IssueMetadata(),
+        aspectRatio: CGFloat = 1.0
+    ) {
+        self.id = previewId
+        self.assetIdentifier = assetIdentifier
+        self.issueType = issueType
+        self.severity = severity ?? issueType.defaultSeverity
+        self.detectedAt = Date()
+        self.metadata = metadata
+        self.aspectRatio = aspectRatio
+    }
+
+    // MARK: Sample Instances
+
+    static let previewScreenshot = PhotoIssue(
+        previewId: "preview-screenshot-1",
+        assetIdentifier: "screenshot-asset-id",
+        issueType: .screenshot,
+        metadata: IssueMetadata(fileSize: 2_500_000),
+        aspectRatio: 9.0/16.0
+    )
+
+    static let previewLargeFile = PhotoIssue(
+        previewId: "preview-largefile-1",
+        assetIdentifier: "largefile-asset-id",
+        issueType: .largeFile,
+        metadata: IssueMetadata(fileSize: 25_000_000),
+        aspectRatio: 4.0/3.0
+    )
+
+    static let previewCorrupted = PhotoIssue(
+        previewId: "preview-corrupted-1",
+        assetIdentifier: "corrupted-asset-id",
+        issueType: .corrupted,
+        severity: .critical,
+        metadata: IssueMetadata(
+            errorMessage: "Unable to decode image data",
+            canRecover: false
+        ),
+        aspectRatio: 1.0
+    )
+
+    static let previewDownloadFailed = PhotoIssue(
+        previewId: "preview-downloadfailed-1",
+        assetIdentifier: "downloadfailed-asset-id",
+        issueType: .downloadFailed,
+        severity: .warning,
+        metadata: IssueMetadata(
+            errorMessage: "iCloud sync required",
+            canRecover: true
+        ),
+        aspectRatio: 16.0/9.0
+    )
+
+    static let previewDuplicate = PhotoIssue(
+        previewId: "preview-duplicate-1",
+        assetIdentifier: "duplicate-asset-id",
+        issueType: .duplicate,
+        metadata: IssueMetadata(
+            fileSize: 5_000_000,
+            duplicateGroupId: "group-abc123"
+        ),
+        aspectRatio: 1.0
+    )
+
+    /// 모든 샘플 인스턴스 배열
+    static let allPreviews: [PhotoIssue] = [
+        previewScreenshot,
+        previewLargeFile,
+        previewCorrupted,
+        previewDownloadFailed,
+        previewDuplicate
+    ]
+}
+#endif

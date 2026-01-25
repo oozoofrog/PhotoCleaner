@@ -396,4 +396,38 @@ final class DashboardViewModel {
         scanResult = nil
         lastScanDate = nil
     }
+
+    // MARK: - Preview Support (DEBUG ONLY)
+
+    #if DEBUG
+    /// Preview 전용 상태 설정 메서드
+    /// 반드시 클래스 본체 내부에 있어야 private(set) 프로퍼티 설정 가능
+    func setPreviewState(
+        appState: AppState? = nil,
+        scanResult: ScanResult? = nil,
+        scanProgress: ScanProgress? = nil,
+        liveIssues: [PhotoIssue]? = nil,
+        liveDuplicateGroups: [DuplicateGroup]? = nil,
+        liveSummaries: [IssueType: Int]? = nil
+    ) {
+        if let appState = appState {
+            self.appState = appState
+        }
+        if let scanResult = scanResult {
+            self.scanResult = scanResult
+        }
+        if let scanProgress = scanProgress {
+            self.scanProgress = scanProgress
+        }
+        if let liveIssues = liveIssues {
+            self.liveIssues = liveIssues
+        }
+        if let liveDuplicateGroups = liveDuplicateGroups {
+            self.liveDuplicateGroups = liveDuplicateGroups
+        }
+        if let liveSummaries = liveSummaries {
+            self.liveSummaries = liveSummaries
+        }
+    }
+    #endif
 }

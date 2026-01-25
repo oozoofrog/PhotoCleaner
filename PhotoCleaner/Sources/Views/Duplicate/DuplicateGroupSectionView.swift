@@ -172,7 +172,7 @@ struct DuplicatePhotoCell: View {
             loadFailed = true
             return
         }
-        
+
         do {
             let image = try await photoAssetService.requestGridThumbnailUIImage(
                 for: asset,
@@ -187,3 +187,54 @@ struct DuplicatePhotoCell: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("DuplicateGroup - Normal") {
+    DuplicateGroupSectionView(
+        group: PreviewSampleData.duplicateGroups.first!,
+        selectedIds: [],
+        isSelectionMode: false,
+        onPhotoTap: { _ in },
+        onDeleteDuplicates: {}
+    )
+    .environment(\.photoAssetService, PreviewPhotoAssetService.shared)
+    .padding()
+}
+
+#Preview("DuplicateGroup - Selection Mode") {
+    DuplicateGroupSectionView(
+        group: PreviewSampleData.duplicateGroups.first!,
+        selectedIds: Set(PreviewSampleData.duplicateGroups.first!.assetIdentifiers.prefix(2)),
+        isSelectionMode: true,
+        onPhotoTap: { _ in },
+        onDeleteDuplicates: {}
+    )
+    .environment(\.photoAssetService, PreviewPhotoAssetService.shared)
+    .padding()
+}
+
+#Preview("DuplicatePhotoCell") {
+    let group = PreviewSampleData.duplicateGroups.first!
+    let assetId = group.assetIdentifiers.first!
+
+    HStack(spacing: Spacing.md) {
+        DuplicatePhotoCell(
+            assetId: assetId,
+            isOriginal: true,
+            isSelected: false,
+            isSelectionMode: false,
+            onTap: {}
+        )
+
+        DuplicatePhotoCell(
+            assetId: assetId,
+            isOriginal: false,
+            isSelected: true,
+            isSelectionMode: true,
+            onTap: {}
+        )
+    }
+    .environment(\.photoAssetService, PreviewPhotoAssetService.shared)
+    .padding()
+}
+#endif
