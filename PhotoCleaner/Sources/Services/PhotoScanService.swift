@@ -39,6 +39,17 @@ enum ScanPhase: Sendable {
     case failed
 }
 
+/// 스캔 업데이트 이벤트 (스트리밍용)
+enum ScanUpdate: Sendable {
+    case progress(ScanProgress)
+    case issueFound(PhotoIssue)
+    case duplicateGroupFound(DuplicateGroup)
+    case summaryUpdated(IssueType, count: Int)
+    case completed(ScanResult)
+    case cancelled(partialResult: ScanResult?)
+    case failed(Error)
+}
+
 /// 스캔 결과
 struct ScanResult: Sendable {
     let totalPhotos: Int
@@ -98,6 +109,9 @@ actor PhotoScanService {
     private var lastProgressUpdate: Date = .distantPast
     private(set) var largeFileThreshold: Int64 = 10 * 1024 * 1024
 
+    /// 현재 스캔 취소 플래그
+    private var isCancelled: Bool = false
+
     init(photoAssetService: some PhotoAssetService) {
         self.photoAssetService = photoAssetService
     }
@@ -107,7 +121,474 @@ actor PhotoScanService {
         cachedResult = nil
     }
 
+    /// 스캔 취소
+    func cancelScan() {
+        isCancelled = true
+    }
+
+    /// 취소 상태 초기화
+    private func resetCancellation() {
+        isCancelled = false
+    }
+
     // MARK: - Public Methods
+
+    /// 스트리밍 스캔 API - 실시간으로 발견된 이슈를 yield
+    func scanAllStreaming(
+        duplicateDetectionMode: DuplicateDetectionMode = .includeSimilar,
+        similarityThreshold: SimilarityThreshold = .percent95
+    ) -> AsyncStream<ScanUpdate> {
+        AsyncStream { continuation in
+            let task = Task { [weak self] in
+                guard let self = self else {
+                    continuation.finish()
+                    return
+                }
+
+                await self.resetCancellation()
+
+                // 준비 단계
+                continuation.yield(.progress(ScanProgress(phase: .preparing, current: 0, total: 0)))
+
+                let fetchOptions = PHFetchOptions()
+                fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+                let allAssets = PHAsset.fetchAssets(with: .image, options: fetchOptions)
+
+                let total = allAssets.count
+                var issues: [PhotoIssue] = []
+                var summaryDict: [IssueType: Int] = [:]
+
+                let assets = await self.convertToArray(allAssets)
+                let threshold = await self.largeFileThreshold
+
+                // 메타데이터 스캔 (이슈 감지)
+                for (index, asset) in assets.enumerated() {
+                    // 취소 확인
+                    if await self.isCancelled || Task.isCancelled {
+                        let partialResult = await self.createPartialResult(
+                            totalPhotos: total,
+                            issues: issues,
+                            duplicateGroups: []
+                        )
+                        continuation.yield(.cancelled(partialResult: partialResult))
+                        continuation.finish()
+                        return
+                    }
+
+                    // 진행률 업데이트
+                    if await self.shouldUpdateProgress(index: index) {
+                        let progress = ScanProgress(phase: .scanning, current: index + 1, total: total)
+                        continuation.yield(.progress(progress))
+                    }
+
+                    // 이슈 감지
+                    let detectedIssues = self.detectIssues(for: asset, largeFileThreshold: threshold)
+                    for issue in detectedIssues {
+                        issues.append(issue)
+                        summaryDict[issue.issueType, default: 0] += 1
+
+                        // 실시간으로 이슈 yield
+                        continuation.yield(.issueFound(issue))
+                        continuation.yield(.summaryUpdated(issue.issueType, count: summaryDict[issue.issueType]!))
+                    }
+                }
+
+                // 중복 스캔 (정확히 일치)
+                let duplicateResult = await self.scanExactDuplicatesStreaming(
+                    assets: assets,
+                    continuation: continuation
+                )
+
+                // 취소 확인
+                if await self.isCancelled || Task.isCancelled {
+                    let partialResult = await self.createPartialResult(
+                        totalPhotos: total,
+                        issues: issues + duplicateResult.issues,
+                        duplicateGroups: duplicateResult.groups
+                    )
+                    continuation.yield(.cancelled(partialResult: partialResult))
+                    continuation.finish()
+                    return
+                }
+
+                issues.append(contentsOf: duplicateResult.issues)
+                var allDuplicateGroups = duplicateResult.groups
+
+                // 유사 이미지 스캔
+                if duplicateDetectionMode == .includeSimilar {
+                    let exactDuplicateAssetIds = Set(duplicateResult.groups.flatMap { $0.assetIdentifiers })
+                    let remainingAssets = assets.filter { !exactDuplicateAssetIds.contains($0.localIdentifier) }
+
+                    let similarResult = await self.scanSimilarPhotosStreaming(
+                        assets: remainingAssets,
+                        similarityThreshold: similarityThreshold.floatValue,
+                        continuation: continuation
+                    )
+
+                    // 취소 확인
+                    if await self.isCancelled || Task.isCancelled {
+                        let partialResult = await self.createPartialResult(
+                            totalPhotos: total,
+                            issues: issues + similarResult.issues,
+                            duplicateGroups: allDuplicateGroups + similarResult.groups
+                        )
+                        continuation.yield(.cancelled(partialResult: partialResult))
+                        continuation.finish()
+                        return
+                    }
+
+                    issues.append(contentsOf: similarResult.issues)
+                    allDuplicateGroups.append(contentsOf: similarResult.groups)
+                }
+
+                // 최종 결과 생성
+                let summaries = self.createSummaries(from: issues)
+                let result = ScanResult(
+                    totalPhotos: total,
+                    issues: issues,
+                    summaries: summaries,
+                    duplicateGroups: allDuplicateGroups,
+                    scannedAt: Date()
+                )
+
+                await self.setCachedResult(result)
+
+                continuation.yield(.progress(ScanProgress(phase: .completed, current: total, total: total)))
+                continuation.yield(.completed(result))
+                continuation.finish()
+            }
+
+            continuation.onTermination = { _ in
+                task.cancel()
+            }
+        }
+    }
+
+    /// 부분 결과 생성 (취소 시 사용)
+    private nonisolated func createPartialResult(
+        totalPhotos: Int,
+        issues: [PhotoIssue],
+        duplicateGroups: [DuplicateGroup]
+    ) -> ScanResult {
+        let summaries = createSummaries(from: issues)
+        return ScanResult(
+            totalPhotos: totalPhotos,
+            issues: issues,
+            summaries: summaries,
+            duplicateGroups: duplicateGroups,
+            scannedAt: Date()
+        )
+    }
+
+    /// 캐시 설정 (actor 격리)
+    private func setCachedResult(_ result: ScanResult) {
+        cachedResult = result
+    }
+
+    // MARK: - Streaming Duplicate Detection
+
+    /// 정확히 일치하는 중복 스캔 (스트리밍)
+    private func scanExactDuplicatesStreaming(
+        assets: [PHAsset],
+        continuation: AsyncStream<ScanUpdate>.Continuation
+    ) async -> (issues: [PhotoIssue], groups: [DuplicateGroup]) {
+        let total = assets.count
+
+        // Metadata Pre-filtering: Group by dimensions
+        var potentialGroups: [String: [PHAsset]] = [:]
+        for asset in assets {
+            let key = "\(asset.pixelWidth)x\(asset.pixelHeight)"
+            potentialGroups[key, default: []].append(asset)
+        }
+
+        let candidates = potentialGroups.values.filter { $0.count > 1 }.flatMap { $0 }
+
+        if candidates.isEmpty {
+            continuation.yield(.progress(ScanProgress(phase: .scanning, current: total, total: total, currentIssueType: .duplicate)))
+            return ([], [])
+        }
+
+        // Parallel Hashing for candidates
+        let hashToAssets = await withTaskGroup(of: (String, DuplicateCandidate)?.self, returning: [String: [DuplicateCandidate]].self) { group in
+            let maxConcurrent = 4
+            var iterator = candidates.makeIterator()
+            var results: [String: [DuplicateCandidate]] = [:]
+            var processedCount = 0
+
+            func addNext() {
+                if let asset = iterator.next() {
+                    group.addTask(priority: .userInitiated) {
+                        guard let result = await self.computeAssetHash(asset) else { return nil }
+                        return (result.hashHex, DuplicateCandidate(
+                            assetId: asset.localIdentifier,
+                            hashHex: result.hashHex,
+                            pixelWidth: asset.pixelWidth,
+                            pixelHeight: asset.pixelHeight,
+                            creationDate: asset.creationDate,
+                            byteCount: result.byteCount
+                        ))
+                    }
+                }
+            }
+
+            for _ in 0..<maxConcurrent {
+                addNext()
+            }
+
+            for await result in group {
+                processedCount += 1
+                if self.shouldUpdateProgress(index: processedCount) {
+                    continuation.yield(.progress(ScanProgress(
+                        phase: .scanning,
+                        current: processedCount,
+                        total: candidates.count,
+                        currentIssueType: .duplicate
+                    )))
+                }
+
+                if let (hash, candidate) = result {
+                    results[hash, default: []].append(candidate)
+                }
+
+                addNext()
+            }
+
+            return results
+        }
+
+        continuation.yield(.progress(ScanProgress(phase: .scanning, current: total, total: total, currentIssueType: .duplicate)))
+
+        // 결과 생성 및 실시간 yield
+        let result = createDuplicateResultsStreaming(from: hashToAssets, assets: assets, continuation: continuation)
+        return result
+    }
+
+    /// 중복 결과 생성 및 실시간 yield
+    private nonisolated func createDuplicateResultsStreaming(
+        from hashToAssets: [String: [DuplicateCandidate]],
+        assets: [PHAsset],
+        continuation: AsyncStream<ScanUpdate>.Continuation
+    ) -> (issues: [PhotoIssue], groups: [DuplicateGroup]) {
+        var groups: [DuplicateGroup] = []
+        var issues: [PhotoIssue] = []
+
+        let assetMap = Dictionary(uniqueKeysWithValues: assets.map { ($0.localIdentifier, $0) })
+
+        for (hash, candidates) in hashToAssets where candidates.count >= 2 {
+            let sortedCandidates = selectOriginalFirst(candidates: candidates)
+            let originalId = sortedCandidates[0].assetId
+            let potentialSavings = sortedCandidates.dropFirst().reduce(Int64(0)) { $0 + $1.byteCount }
+
+            let group = DuplicateGroup(
+                id: "sha256:\(hash.prefix(16))",
+                assetIdentifiers: sortedCandidates.map { $0.assetId },
+                suggestedOriginalId: originalId,
+                similarity: 1.0,
+                potentialSavings: potentialSavings
+            )
+            groups.append(group)
+
+            // 실시간으로 그룹 yield
+            continuation.yield(.duplicateGroupFound(group))
+
+            for candidate in sortedCandidates.dropFirst() {
+                guard let asset = assetMap[candidate.assetId] else { continue }
+                let issue = PhotoIssue(
+                    asset: asset,
+                    issueType: .duplicate,
+                    severity: .info,
+                    metadata: IssueMetadata(
+                        fileSize: candidate.byteCount,
+                        duplicateGroupId: group.id
+                    )
+                )
+                issues.append(issue)
+                continuation.yield(.issueFound(issue))
+            }
+        }
+
+        return (issues, groups)
+    }
+
+    /// 유사 이미지 스캔 (스트리밍)
+    private func scanSimilarPhotosStreaming(
+        assets: [PHAsset],
+        similarityThreshold: Float,
+        continuation: AsyncStream<ScanUpdate>.Continuation
+    ) async -> (issues: [PhotoIssue], groups: [DuplicateGroup]) {
+        let buckets = bucketAssetsByMetadata(assets)
+        let assetMap = Dictionary(uniqueKeysWithValues: assets.map { ($0.localIdentifier, $0) })
+
+        var allIssues: [PhotoIssue] = []
+        var allGroups: [DuplicateGroup] = []
+        var processedCount = 0
+        let total = assets.count
+
+        for (_, bucketAssets) in buckets {
+            // 취소 확인
+            if isCancelled || Task.isCancelled {
+                return (allIssues, allGroups)
+            }
+
+            let candidates = await withTaskGroup(of: FeaturePrintCandidate?.self, returning: [FeaturePrintCandidate].self) { group in
+                var iterator = bucketAssets.makeIterator()
+                var bucketCandidates: [FeaturePrintCandidate] = []
+
+                for _ in 0..<Self.maxConcurrentFeaturePrints {
+                    guard let asset = iterator.next() else { break }
+                    group.addTask(priority: .userInitiated) {
+                        guard let result = await self.computeFeaturePrint(for: asset) else { return nil }
+                        let bucketKey = self.computeBucketKey(for: asset)
+                        return FeaturePrintCandidate(
+                            assetId: asset.localIdentifier,
+                            featurePrint: result.featurePrint,
+                            pixelWidth: asset.pixelWidth,
+                            pixelHeight: asset.pixelHeight,
+                            creationDate: asset.creationDate,
+                            byteCount: result.byteCount,
+                            bucketKey: bucketKey
+                        )
+                    }
+                }
+
+                for await result in group {
+                    processedCount += 1
+                    if self.shouldUpdateProgress(index: processedCount) {
+                        continuation.yield(.progress(ScanProgress(
+                            phase: .scanning,
+                            current: processedCount,
+                            total: total,
+                            currentIssueType: .duplicate
+                        )))
+                    }
+
+                    if let candidate = result {
+                        bucketCandidates.append(candidate)
+                    }
+
+                    if let nextAsset = iterator.next() {
+                        group.addTask(priority: .userInitiated) {
+                            guard let result = await self.computeFeaturePrint(for: nextAsset) else { return nil }
+                            let bucketKey = self.computeBucketKey(for: nextAsset)
+                            return FeaturePrintCandidate(
+                                assetId: nextAsset.localIdentifier,
+                                featurePrint: result.featurePrint,
+                                pixelWidth: nextAsset.pixelWidth,
+                                pixelHeight: nextAsset.pixelHeight,
+                                creationDate: nextAsset.creationDate,
+                                byteCount: result.byteCount,
+                                bucketKey: bucketKey
+                            )
+                        }
+                    }
+                }
+                return bucketCandidates
+            }
+
+            let bucketResult = groupSimilarCandidatesStreaming(candidates, threshold: similarityThreshold, assetMap: assetMap, continuation: continuation)
+            allIssues.append(contentsOf: bucketResult.issues)
+            allGroups.append(contentsOf: bucketResult.groups)
+        }
+
+        return (allIssues, allGroups)
+    }
+
+    /// 유사 이미지 그룹화 및 실시간 yield
+    private nonisolated func groupSimilarCandidatesStreaming(
+        _ candidates: [FeaturePrintCandidate],
+        threshold: Float,
+        assetMap: [String: PHAsset],
+        continuation: AsyncStream<ScanUpdate>.Continuation
+    ) -> (issues: [PhotoIssue], groups: [DuplicateGroup]) {
+        guard candidates.count >= 2 else { return ([], []) }
+
+        var parent = Array(0..<candidates.count)
+        var rank = Array(repeating: 0, count: candidates.count)
+
+        func find(_ x: Int) -> Int {
+            if parent[x] != x {
+                parent[x] = find(parent[x])
+            }
+            return parent[x]
+        }
+
+        func union(_ x: Int, _ y: Int) {
+            let px = find(x)
+            let py = find(y)
+            guard px != py else { return }
+
+            if rank[px] < rank[py] {
+                parent[px] = py
+            } else if rank[px] > rank[py] {
+                parent[py] = px
+            } else {
+                parent[py] = px
+                rank[px] += 1
+            }
+        }
+
+        let distanceThreshold = 1.0 - threshold
+
+        for i in 0..<candidates.count {
+            for j in (i + 1)..<candidates.count {
+                var distance: Float = 0
+                do {
+                    try candidates[i].featurePrint.computeDistance(&distance, to: candidates[j].featurePrint)
+                    if distance <= distanceThreshold {
+                        union(i, j)
+                    }
+                } catch {
+                    continue
+                }
+            }
+        }
+
+        var groupMap: [Int: [Int]] = [:]
+        for i in 0..<candidates.count {
+            let root = find(i)
+            groupMap[root, default: []].append(i)
+        }
+
+        var groups: [DuplicateGroup] = []
+        var issues: [PhotoIssue] = []
+
+        for (_, memberIndices) in groupMap where memberIndices.count >= 2 {
+            let members = memberIndices.map { candidates[$0] }
+            let sortedMembers = sortByOriginalPriority(members)
+            let originalId = sortedMembers[0].assetId
+            let potentialSavings = sortedMembers.dropFirst().reduce(Int64(0)) { $0 + $1.byteCount }
+
+            let groupId = "similar:\(UUID().uuidString.prefix(8))"
+            let group = DuplicateGroup(
+                id: groupId,
+                assetIdentifiers: sortedMembers.map { $0.assetId },
+                suggestedOriginalId: originalId,
+                similarity: Double(threshold),
+                potentialSavings: potentialSavings
+            )
+            groups.append(group)
+
+            // 실시간으로 그룹 yield
+            continuation.yield(.duplicateGroupFound(group))
+
+            for member in sortedMembers.dropFirst() {
+                guard let asset = assetMap[member.assetId] else { continue }
+                let issue = PhotoIssue(
+                    asset: asset,
+                    issueType: .duplicate,
+                    severity: .info,
+                    metadata: IssueMetadata(
+                        fileSize: member.byteCount,
+                        duplicateGroupId: groupId
+                    )
+                )
+                issues.append(issue)
+                continuation.yield(.issueFound(issue))
+            }
+        }
+
+        return (issues, groups)
+    }
 
     func scanAll(
         duplicateDetectionMode: DuplicateDetectionMode = .includeSimilar,
