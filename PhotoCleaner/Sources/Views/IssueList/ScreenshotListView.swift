@@ -20,7 +20,7 @@ struct ScreenshotListView: View {
             isSelectionMode, selectedIssues, toggleSelection, selectIssue in
 
             VStack(spacing: Spacing.sm) {
-                issueInfoHeader
+                IssueInfoHeader(issueType: .screenshot)
 
                 DateFilterPicker(
                     selectedFilter: $selectedDateFilter,
@@ -39,25 +39,9 @@ struct ScreenshotListView: View {
         .onAppear {
             groupedByDate = groupIssuesByDate(issues)
         }
-    }
-
-    // MARK: - Issue Info Header
-
-    private var issueInfoHeader: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Label(IssueType.screenshot.displayName, systemImage: IssueType.screenshot.iconName)
-                .font(Typography.headline)
-                .foregroundStyle(IssueType.screenshot.color)
-
-            Text(IssueType.screenshot.userDescription)
-                .font(Typography.subheadline)
-                .foregroundStyle(AppColor.textSecondary)
+        .onChange(of: issues) { _, newIssues in
+            groupedByDate = groupIssuesByDate(newIssues)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Spacing.md)
-        .background(AppColor.backgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md))
-        .padding(.horizontal, Spacing.sm)
     }
 
     // MARK: - Screenshot Content
@@ -83,7 +67,7 @@ struct ScreenshotListView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, Spacing.xxl)
         } else {
-            standardPhotoGrid(
+            IssuePhotoGrid(
                 issues: filteredIssues,
                 isSelectionMode: isSelectionMode,
                 selectedIssues: selectedIssues,
@@ -91,37 +75,6 @@ struct ScreenshotListView: View {
                 selectIssue: selectIssue
             )
         }
-    }
-
-    // MARK: - Photo Grid
-
-    private func standardPhotoGrid(
-        issues: [PhotoIssue],
-        isSelectionMode: Bool,
-        selectedIssues: Set<String>,
-        toggleSelection: @escaping (String) -> Void,
-        selectIssue: @escaping (PhotoIssue) -> Void
-    ) -> some View {
-        JustifiedPhotoGrid(
-            targetRowHeight: GridLayout.rowHeight,
-            spacing: Spacing.xs
-        ) {
-            ForEach(issues) { issue in
-                PhotoThumbnailView(
-                    issue: issue,
-                    isSelected: selectedIssues.contains(issue.id),
-                    isSelectionMode: isSelectionMode
-                ) {
-                    if isSelectionMode {
-                        toggleSelection(issue.id)
-                    } else {
-                        selectIssue(issue)
-                    }
-                }
-                .photoAspectRatio(issue.aspectRatio)
-            }
-        }
-        .padding(.horizontal, Spacing.sm)
     }
 
     // MARK: - Date Grouping

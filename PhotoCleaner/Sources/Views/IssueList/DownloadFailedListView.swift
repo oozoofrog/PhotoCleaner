@@ -18,9 +18,11 @@ struct DownloadFailedListView: View {
             isSelectionMode, selectedIssues, toggleSelection, selectIssue in
 
             VStack(spacing: Spacing.sm) {
-                issueInfoHeader
+                IssueInfoHeader(issueType: .downloadFailed) {
+                    resourceStatisticsView
+                }
 
-                standardPhotoGrid(
+                IssuePhotoGrid(
                     issues: issues,
                     isSelectionMode: isSelectionMode,
                     selectedIssues: selectedIssues,
@@ -32,27 +34,9 @@ struct DownloadFailedListView: View {
         .onAppear {
             cachedStats = computeResourceStatistics()
         }
-    }
-
-    // MARK: - Issue Info Header with Statistics
-
-    private var issueInfoHeader: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Label(IssueType.downloadFailed.displayName, systemImage: IssueType.downloadFailed.iconName)
-                .font(Typography.headline)
-                .foregroundStyle(IssueType.downloadFailed.color)
-
-            Text(IssueType.downloadFailed.userDescription)
-                .font(Typography.subheadline)
-                .foregroundStyle(AppColor.textSecondary)
-
-            resourceStatisticsView
+        .onChange(of: issues) { _, newIssues in
+            cachedStats = computeResourceStatistics()
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Spacing.md)
-        .background(AppColor.backgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md))
-        .padding(.horizontal, Spacing.sm)
     }
 
     // MARK: - Resource Statistics
@@ -91,37 +75,6 @@ struct DownloadFailedListView: View {
         return grouped
             .mapValues { $0.count }
             .sorted { $0.value > $1.value }
-    }
-
-    // MARK: - Photo Grid
-
-    private func standardPhotoGrid(
-        issues: [PhotoIssue],
-        isSelectionMode: Bool,
-        selectedIssues: Set<String>,
-        toggleSelection: @escaping (String) -> Void,
-        selectIssue: @escaping (PhotoIssue) -> Void
-    ) -> some View {
-        JustifiedPhotoGrid(
-            targetRowHeight: GridLayout.rowHeight,
-            spacing: Spacing.xs
-        ) {
-            ForEach(issues) { issue in
-                PhotoThumbnailView(
-                    issue: issue,
-                    isSelected: selectedIssues.contains(issue.id),
-                    isSelectionMode: isSelectionMode
-                ) {
-                    if isSelectionMode {
-                        toggleSelection(issue.id)
-                    } else {
-                        selectIssue(issue)
-                    }
-                }
-                .photoAspectRatio(issue.aspectRatio)
-            }
-        }
-        .padding(.horizontal, Spacing.sm)
     }
 }
 
