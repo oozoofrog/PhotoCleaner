@@ -64,7 +64,7 @@ struct PhotoLibrarySyncServiceTests {
             NewAssetInfo(localIdentifier: "existing-asset", creationDate: nil, pixelWidth: 100, pixelHeight: 100, mediaSubtypes: 0)
         ])
         
-        await mockStore.resetInsertTracking()
+        mockStore.resetInsertTracking()
         
         let mockLibrary = MockPhotoLibraryProvider(
             assetIdentifiers: ["existing-asset", "new-asset"]
@@ -80,8 +80,8 @@ struct PhotoLibrarySyncServiceTests {
         let cachedIds = await mockStore.fetchAllIdentifiers()
         #expect(cachedIds.count == 2)
         
-        let insertedCount = await mockStore.getInsertedAssetsCount()
-        let lastInsertedId = await mockStore.getLastInsertedAssetId()
+        let insertedCount = mockStore.getInsertedAssetsCount()
+        let lastInsertedId = mockStore.getLastInsertedAssetId()
         #expect(insertedCount == 1)
         #expect(lastInsertedId == "new-asset")
     }

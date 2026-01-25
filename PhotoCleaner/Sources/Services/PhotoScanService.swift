@@ -496,31 +496,84 @@ actor PhotoScanService {
         progressHandler: @escaping @MainActor @Sendable (ScanProgress) -> Void
     ) async -> (issues: [PhotoIssue], groups: [DuplicateGroup]) {
         let total = assets.count
-        var hashToAssets: [String: [DuplicateCandidate]] = [:]
-
-        for (index, asset) in assets.enumerated() {
-            if shouldUpdateProgress(index: index) {
-                await progressHandler(ScanProgress(
-                    phase: .scanning,
-                    current: index + 1,
-                    total: total,
-                    currentIssueType: .duplicate
-                ))
-            }
-
-            guard let result = await computeAssetHash(asset) else { continue }
-
-            let candidate = DuplicateCandidate(
-                assetId: asset.localIdentifier,
-                hashHex: result.hashHex,
-                pixelWidth: asset.pixelWidth,
-                pixelHeight: asset.pixelHeight,
-                creationDate: asset.creationDate,
-                byteCount: result.byteCount
-            )
-
-            hashToAssets[result.hashHex, default: []].append(candidate)
+        
+        // 1. Metadata Pre-filtering: Group by dimensions
+        // Exact duplicates MUST have same dimensions. This filters out 90%+ of unique photos.
+        var potentialGroups: [String: [PHAsset]] = [:]
+        for asset in assets {
+            let key = "\(asset.pixelWidth)x\(asset.pixelHeight)"
+            potentialGroups[key, default: []].append(asset)
         }
+        
+        let candidates = potentialGroups.values.filter { $0.count > 1 }.flatMap { $0 }
+        
+        // If no potential duplicates found by metadata, return early
+        if candidates.isEmpty { 
+            await progressHandler(ScanProgress(phase: .scanning, current: total, total: total, currentIssueType: .duplicate))
+            return ([], []) 
+        }
+        
+        // 2. Parallel Hashing for candidates
+        let hashToAssets = await withTaskGroup(of: (String, DuplicateCandidate)?.self, returning: [String: [DuplicateCandidate]].self) { group in
+            
+            // Limit concurrency (e.g. 4)
+            let maxConcurrent = 4
+            var activeAssets = 0
+            var iterator = candidates.makeIterator()
+            var results: [String: [DuplicateCandidate]] = [:]
+            var processedCount = 0
+            
+            // Function to add work
+            func addNext() {
+                if let asset = iterator.next() {
+                    group.addTask(priority: .userInitiated) {
+                        guard let result = await self.computeAssetHash(asset) else { return nil }
+                        
+                        return (result.hashHex, DuplicateCandidate(
+                            assetId: asset.localIdentifier,
+                            hashHex: result.hashHex,
+                            pixelWidth: asset.pixelWidth,
+                            pixelHeight: asset.pixelHeight,
+                            creationDate: asset.creationDate,
+                            byteCount: result.byteCount
+                        ))
+                    }
+                    activeAssets += 1
+                }
+            }
+            
+            // Initial fill
+            for _ in 0..<maxConcurrent {
+                addNext()
+            }
+            
+            // Process results
+            for await result in group {
+                processedCount += 1
+                
+                // Update progress occasionally
+                if self.shouldUpdateProgress(index: processedCount) {
+                    await progressHandler(ScanProgress(
+                        phase: .scanning,
+                        current: processedCount, // Note: This progress display logic might be jumpy relative to 'total' which is all assets.
+                        total: candidates.count, // Show progress relative to candidates? Or stick to main flow.
+                        currentIssueType: .duplicate
+                    ))
+                }
+                
+                if let (hash, candidate) = result {
+                    results[hash, default: []].append(candidate)
+                }
+                
+                activeAssets -= 1
+                addNext()
+            }
+            
+            return results
+        }
+        
+        // Final progress update
+        await progressHandler(ScanProgress(phase: .scanning, current: total, total: total, currentIssueType: .duplicate))
 
         return createDuplicateResults(from: hashToAssets, assets: assets)
     }
@@ -625,7 +678,7 @@ actor PhotoScanService {
 
     // MARK: - Similar Photo Detection (Vision pHash)
 
-    private struct FeaturePrintCandidate {
+    private struct FeaturePrintCandidate: @unchecked Sendable {
         let assetId: String
         let featurePrint: VNFeaturePrintObservation
         let pixelWidth: Int
@@ -635,6 +688,11 @@ actor PhotoScanService {
         let bucketKey: String
 
         var resolution: Int { pixelWidth * pixelHeight }
+    }
+
+    private struct VisionResult: @unchecked Sendable {
+        let featurePrint: VNFeaturePrintObservation
+        let byteCount: Int64
     }
 
     private nonisolated static let maxBucketSize = 100
@@ -654,32 +712,42 @@ actor PhotoScanService {
         let total = assets.count
 
         for (_, bucketAssets) in buckets {
-            var candidates: [FeaturePrintCandidate] = []
-
-            for asset in bucketAssets {
-                processedCount += 1
-                if shouldUpdateProgress(index: processedCount) {
-                    await progressHandler(ScanProgress(
-                        phase: .scanning,
-                        current: processedCount,
-                        total: total,
-                        currentIssueType: .duplicate
-                    ))
+            // Parallelize Vision Processing within Bucket
+            let candidates = await withTaskGroup(of: FeaturePrintCandidate?.self, returning: [FeaturePrintCandidate].self) { group in
+                for asset in bucketAssets {
+                    group.addTask(priority: .userInitiated) {
+                        guard let result = await self.computeFeaturePrint(for: asset) else { return nil }
+                        
+                        let bucketKey = self.computeBucketKey(for: asset)
+                        return FeaturePrintCandidate(
+                            assetId: asset.localIdentifier,
+                            featurePrint: result.featurePrint,
+                            pixelWidth: asset.pixelWidth,
+                            pixelHeight: asset.pixelHeight,
+                            creationDate: asset.creationDate,
+                            byteCount: result.byteCount,
+                            bucketKey: bucketKey
+                        )
+                    }
                 }
-
-                guard let result = await computeFeaturePrint(for: asset) else { continue }
-
-                let bucketKey = computeBucketKey(for: asset)
-                let candidate = FeaturePrintCandidate(
-                    assetId: asset.localIdentifier,
-                    featurePrint: result.featurePrint,
-                    pixelWidth: asset.pixelWidth,
-                    pixelHeight: asset.pixelHeight,
-                    creationDate: asset.creationDate,
-                    byteCount: result.byteCount,
-                    bucketKey: bucketKey
-                )
-                candidates.append(candidate)
+                
+                var bucketCandidates: [FeaturePrintCandidate] = []
+                for await result in group {
+                    processedCount += 1
+                    if self.shouldUpdateProgress(index: processedCount) {
+                        await progressHandler(ScanProgress(
+                            phase: .scanning,
+                            current: processedCount,
+                            total: total,
+                            currentIssueType: .duplicate
+                        ))
+                    }
+                    
+                    if let candidate = result {
+                        bucketCandidates.append(candidate)
+                    }
+                }
+                return bucketCandidates
             }
 
             let bucketResult = groupSimilarCandidates(candidates, threshold: similarityThreshold, assetMap: assetMap)
@@ -740,7 +808,7 @@ actor PhotoScanService {
         return "\(dateKey)_\(aspectBucket)_\(resolutionBucket)"
     }
 
-    private func computeFeaturePrint(for asset: PHAsset) async -> (featurePrint: VNFeaturePrintObservation, byteCount: Int64)? {
+    private func computeFeaturePrint(for asset: PHAsset) async -> VisionResult? {
         let scale = await MainActor.run { UITraitCollection.current.displayScale }
         let targetSize = CGSize(width: 300, height: 300)
         
@@ -758,7 +826,7 @@ actor PhotoScanService {
                 do {
                     try handler.perform([request])
                     guard let observation = request.results?.first else { return nil }
-                    return (observation, byteCount)
+                    return VisionResult(featurePrint: observation, byteCount: byteCount)
                 } catch {
                     return nil
                 }

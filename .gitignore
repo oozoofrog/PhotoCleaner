@@ -58,3 +58,4 @@ buildServer.json
 *.dSYM.zip
 *.dSYM
 *.app
+.build-log.txt
