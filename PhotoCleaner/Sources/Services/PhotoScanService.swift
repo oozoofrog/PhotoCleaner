@@ -109,9 +109,6 @@ actor PhotoScanService {
     private var lastProgressUpdate: Date = .distantPast
     private(set) var largeFileThreshold: Int64 = 10 * 1024 * 1024
 
-    /// 현재 스캔 취소 플래그
-    private var isCancelled: Bool = false
-
     init(photoAssetService: some PhotoAssetService) {
         self.photoAssetService = photoAssetService
     }
@@ -119,16 +116,6 @@ actor PhotoScanService {
     func setLargeFileThreshold(_ threshold: LargeFileSizeOption) {
         largeFileThreshold = threshold.rawValue
         cachedResult = nil
-    }
-
-    /// 스캔 취소
-    func cancelScan() {
-        isCancelled = true
-    }
-
-    /// 취소 상태 초기화
-    private func resetCancellation() {
-        isCancelled = false
     }
 
     // MARK: - Public Methods
@@ -139,13 +126,8 @@ actor PhotoScanService {
         similarityThreshold: SimilarityThreshold = .percent95
     ) -> AsyncStream<ScanUpdate> {
         AsyncStream { continuation in
-            let task = Task { [weak self] in
-                guard let self = self else {
-                    continuation.finish()
-                    return
-                }
-
-                await self.resetCancellation()
+            let task = Task {
+                // Actor는 reference cycle 위험 없음 - self가 nil이 되면 스트림이 중간에 끊기는 문제 발생
 
                 // 준비 단계
                 continuation.yield(.progress(ScanProgress(phase: .preparing, current: 0, total: 0)))
@@ -164,7 +146,7 @@ actor PhotoScanService {
                 // 메타데이터 스캔 (이슈 감지)
                 for (index, asset) in assets.enumerated() {
                     // 취소 확인
-                    if await self.isCancelled || Task.isCancelled {
+                    if Task.isCancelled {
                         let partialResult = await self.createPartialResult(
                             totalPhotos: total,
                             issues: issues,
@@ -200,7 +182,7 @@ actor PhotoScanService {
                 )
 
                 // 취소 확인
-                if await self.isCancelled || Task.isCancelled {
+                if Task.isCancelled {
                     let partialResult = await self.createPartialResult(
                         totalPhotos: total,
                         issues: issues + duplicateResult.issues,
@@ -226,7 +208,7 @@ actor PhotoScanService {
                     )
 
                     // 취소 확인
-                    if await self.isCancelled || Task.isCancelled {
+                    if Task.isCancelled {
                         let partialResult = await self.createPartialResult(
                             totalPhotos: total,
                             issues: issues + similarResult.issues,
@@ -426,7 +408,7 @@ actor PhotoScanService {
 
         for (_, bucketAssets) in buckets {
             // 취소 확인
-            if isCancelled || Task.isCancelled {
+            if Task.isCancelled {
                 return (allIssues, allGroups)
             }
 
@@ -1159,6 +1141,12 @@ actor PhotoScanService {
 
     // MARK: - Similar Photo Detection (Vision pHash)
 
+    /// Vision framework의 VNFeaturePrintObservation을 포함하는 후보 구조체
+    /// @unchecked Sendable 사용 이유:
+    /// - VNFeaturePrintObservation은 Sendable을 준수하지 않음
+    /// - 그러나 이 타입은 생성 후 읽기 전용(immutable)으로만 사용됨
+    /// - Vision framework 내부에서 thread-safe하게 구현되어 있음 (WWDC 2021)
+    /// - 따라서 actor 경계를 넘어 전달해도 안전함
     private struct FeaturePrintCandidate: @unchecked Sendable {
         let assetId: String
         let featurePrint: VNFeaturePrintObservation
@@ -1171,6 +1159,10 @@ actor PhotoScanService {
         var resolution: Int { pixelWidth * pixelHeight }
     }
 
+    /// Vision 분석 결과를 담는 구조체
+    /// @unchecked Sendable 사용 이유: FeaturePrintCandidate와 동일
+    /// - VNFeaturePrintObservation은 Sendable을 준수하지 않음
+    /// - 생성 후 읽기 전용으로만 사용되어 안전함
     private struct VisionResult: @unchecked Sendable {
         let featurePrint: VNFeaturePrintObservation
         let byteCount: Int64

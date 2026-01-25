@@ -248,10 +248,11 @@ final class DashboardViewModel {
     }
 
     /// 스캔 취소
+    /// Task 취소만으로 충분 - AsyncStream의 onTermination이 내부 Task를 취소하므로
+    /// 별도의 scanService.cancelScan() 호출 불필요
     func cancelScan() {
         scanStreamTask?.cancel()
         scanStreamTask = nil
-        Task { await scanService.cancelScan() }
     }
 
     /// 전체 검사 시작 (레거시 - 하위호환성 유지)
