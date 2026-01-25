@@ -5,20 +5,26 @@ Guidelines for AI agents working in this iOS/SwiftUI codebase.
 ## Build & Test Commands
 
 ```bash
-# Build (Debug)
-xcodebuild -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'platform=iOS Simulator,name=iPhone 17' build
+# Build with xcsift (권장 - AI 친화적 출력)
+xcodebuild build -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'generic/platform=iOS Simulator' 2>&1 | xcsift --warnings
 
-# Build (Release)
-xcodebuild -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -configuration Release build
+# Build with build-check.sh 스크립트
+./scripts/build-check.sh           # Debug 빌드
+./scripts/build-check.sh release   # Release 빌드
+./scripts/build-check.sh clean     # 클린 빌드
+./scripts/build-check.sh test      # 테스트 실행
 
-# Run all tests
-xcodebuild test -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'platform=iOS Simulator,name=iPhone 17'
+# 직접 xcodebuild 사용
+xcodebuild -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'generic/platform=iOS Simulator' build
+
+# Run all tests (특정 시뮬레이터 필요)
+xcodebuild test -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'platform=iOS Simulator,name=iPhone 16' 2>&1 | xcsift
 
 # Run single test file
-xcodebuild test -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:PhotoCleanerTests/PhotoIssueTests
+xcodebuild test -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:PhotoCleanerTests/PhotoIssueTests
 
 # Run single test method
-xcodebuild test -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:PhotoCleanerTests/PhotoIssueTests/issueTypeDisplayNameNotEmpty
+xcodebuild test -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:PhotoCleanerTests/PhotoIssueTests/issueTypeDisplayNameNotEmpty
 ```
 
 ## LSP Setup (sourcekit-lsp)
@@ -32,7 +38,7 @@ iOS 프로젝트에서 sourcekit-lsp를 사용하려면 빌드 후 컴파일 플
 # 또는 수동 실행
 xcodebuild -project PhotoCleaner.xcodeproj \
   -scheme PhotoCleaner \
-  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -destination 'platform=iOS Simulator,name=iPhone 16' \
   clean build 2>&1 | xcode-build-server parse
 ```
 
