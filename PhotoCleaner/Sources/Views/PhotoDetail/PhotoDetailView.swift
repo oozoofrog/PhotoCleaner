@@ -109,34 +109,62 @@ struct PhotoDetailView: View {
     // MARK: - Views
 
     private var bottomInfoBar: some View {
-        VStack(spacing: Spacing.sm) {
-            if let issue = issue {
+        ZStack(alignment: .bottom) {
+            // Gradient overlay for better text readability
+            LinearGradient(
+                colors: [
+                    .clear,
+                    .black.opacity(0.3),
+                    .black.opacity(0.5)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 120)
+            .allowsHitTesting(false)
+
+            VStack(spacing: Spacing.sm) {
+                if let issue = issue {
+                    HStack(spacing: Spacing.xs) {
+                        Image(systemName: issue.issueType.iconName)
+                            .foregroundStyle(AppColor.accent)
+                            .font(.system(size: IconSize.sm, weight: .medium))
+
+                        Text(issue.issueType.displayName)
+                            .font(Typography.subheadline.weight(.medium))
+                            .foregroundStyle(.white)
+
+                        Spacer()
+                    }
+                    .padding(.horizontal, Spacing.sm)
+                    .padding(.vertical, Spacing.xs)
+                    .background(
+                        Capsule()
+                            .fill(AppColor.accent.opacity(0.15))
+                            .overlay(
+                                Capsule()
+                                    .strokeBorder(AppColor.accent.opacity(0.3), lineWidth: 1)
+                            )
+                    )
+                }
+
                 HStack {
-                    Image(systemName: issue.issueType.iconName)
-                        .foregroundStyle(issue.issueType.color)
-                    Text(issue.issueType.displayName)
-                        .font(Typography.subheadline)
-                        .foregroundStyle(.white)
+                    if let creationDate = asset.creationDate {
+                        Text(creationDate.formatted(date: .abbreviated, time: .shortened))
+                            .font(Typography.caption)
+                            .foregroundStyle(.white.opacity(0.9))
+                    }
+
                     Spacer()
-                }
-            }
 
-            HStack {
-                if let creationDate = asset.creationDate {
-                    Text(creationDate.formatted(date: .abbreviated, time: .shortened))
+                    Text("\(asset.pixelWidth) × \(asset.pixelHeight)")
                         .font(Typography.caption)
-                        .foregroundStyle(.white.opacity(0.7))
+                        .foregroundStyle(.white.opacity(0.9))
                 }
-
-                Spacer()
-
-                Text("\(asset.pixelWidth) × \(asset.pixelHeight)")
-                    .font(Typography.caption)
-                    .foregroundStyle(.white.opacity(0.7))
             }
+            .padding(Spacing.md)
+            .background(.ultraThinMaterial)
         }
-        .padding(Spacing.md)
-        .background(.ultraThinMaterial.opacity(0.8))
     }
 
     // MARK: - Methods
@@ -269,28 +297,56 @@ struct PhotoMetadataSheet: View {
                 VStack {
                     Spacer()
                     // Bottom info bar simulation
-                    VStack(spacing: Spacing.sm) {
-                        HStack {
-                            Image(systemName: "camera.viewfinder")
-                                .foregroundStyle(AppColor.warning)
-                            Text("스크린샷")
-                                .font(Typography.subheadline)
-                                .foregroundStyle(.white)
-                            Spacer()
-                        }
+                    ZStack(alignment: .bottom) {
+                        // Gradient overlay for better text readability
+                        LinearGradient(
+                            colors: [
+                                .clear,
+                                .black.opacity(0.3),
+                                .black.opacity(0.5)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .frame(height: 120)
+                        .allowsHitTesting(false)
 
-                        HStack {
-                            Text("2025년 1월 25일 오후 3:30")
-                                .font(Typography.caption)
-                                .foregroundStyle(.white.opacity(0.7))
-                            Spacer()
-                            Text("1170 × 2532")
-                                .font(Typography.caption)
-                                .foregroundStyle(.white.opacity(0.7))
+                        VStack(spacing: Spacing.sm) {
+                            HStack(spacing: Spacing.xs) {
+                                Image(systemName: "camera.viewfinder")
+                                    .foregroundStyle(AppColor.accent)
+                                    .font(.system(size: IconSize.sm, weight: .medium))
+
+                                Text("스크린샷")
+                                    .font(Typography.subheadline.weight(.medium))
+                                    .foregroundStyle(.white)
+
+                                Spacer()
+                            }
+                            .padding(.horizontal, Spacing.sm)
+                            .padding(.vertical, Spacing.xs)
+                            .background(
+                                Capsule()
+                                    .fill(AppColor.accent.opacity(0.15))
+                                    .overlay(
+                                        Capsule()
+                                            .strokeBorder(AppColor.accent.opacity(0.3), lineWidth: 1)
+                                    )
+                            )
+
+                            HStack {
+                                Text("2025년 1월 25일 오후 3:30")
+                                    .font(Typography.caption)
+                                    .foregroundStyle(.white.opacity(0.9))
+                                Spacer()
+                                Text("1170 × 2532")
+                                    .font(Typography.caption)
+                                    .foregroundStyle(.white.opacity(0.9))
+                            }
                         }
+                        .padding(Spacing.md)
+                        .background(.ultraThinMaterial)
                     }
-                    .padding(Spacing.md)
-                    .background(.ultraThinMaterial.opacity(0.8))
                 }
             }
         }

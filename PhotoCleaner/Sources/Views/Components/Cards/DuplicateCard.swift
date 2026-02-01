@@ -21,7 +21,7 @@ struct DuplicateCard: View {
                     HStack {
                         Image(systemName: "square.on.square")
                             .font(.system(size: IconSize.lg))
-                            .foregroundStyle(AppColor.primary)
+                            .foregroundStyle(AppColor.accent)
 
                         HStack(spacing: Spacing.xs) {
                             Text("중복 그룹 ")
@@ -29,7 +29,7 @@ struct DuplicateCard: View {
                                 .foregroundStyle(AppColor.textPrimary)
                             Text("\(groupCount)")
                                 .font(Typography.headline)
-                                .foregroundStyle(AppColor.textPrimary)
+                                .foregroundStyle(AppColor.accent)
                                 .contentTransition(.numericText())
                                 .animation(.spring(response: 0.3), value: groupCount)
                             Text("개")
@@ -46,7 +46,16 @@ struct DuplicateCard: View {
                         Text("\(duplicateCount)")
                             .contentTransition(.numericText())
                             .animation(.spring(response: 0.3), value: duplicateCount)
-                        Text("장 정리 시 \(potentialSavings) 확보")
+                        Text("장 정리 시 ")
+                        Text(potentialSavings)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [AppColor.accent, AppColor.accent.opacity(0.7)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                        Text(" 확보")
                     }
                     .font(Typography.subheadline)
                     .foregroundStyle(AppColor.textSecondary)
@@ -59,9 +68,7 @@ struct DuplicateCard: View {
                         .foregroundStyle(AppColor.textTertiary)
                 }
             }
-            .padding(Spacing.md)
-            .background(AppColor.backgroundSecondary)
-            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md))
+            .premiumCard()
         }
         .buttonStyle(.plain)
     }

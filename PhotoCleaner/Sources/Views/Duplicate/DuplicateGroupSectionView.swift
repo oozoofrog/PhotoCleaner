@@ -22,8 +22,9 @@ struct DuplicateGroupSectionView: View {
             }
         }
         .padding(Spacing.md)
-        .background(AppColor.backgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md))
+        .glassCard()
+        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.lg))
+        .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
     }
     
     private var groupHeader: some View {
@@ -106,7 +107,7 @@ struct DuplicatePhotoCell: View {
             .overlay {
                 if isSelected {
                     RoundedRectangle(cornerRadius: CornerRadius.sm)
-                        .stroke(AppColor.primary, lineWidth: 3)
+                        .stroke(AppColor.accent, lineWidth: 3)
                 }
             }
         }
@@ -144,7 +145,7 @@ struct DuplicatePhotoCell: View {
             .foregroundStyle(.white)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
-            .background(AppColor.success)
+            .background(AppColor.accent)
             .clipShape(Capsule())
             .padding(4)
     }
@@ -155,7 +156,7 @@ struct DuplicatePhotoCell: View {
                 Spacer()
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: IconSize.md))
-                    .foregroundStyle(isSelected ? AppColor.primary : .white)
+                    .foregroundStyle(isSelected ? AppColor.accent : .white)
                     .background(
                         Circle()
                             .fill(isSelected ? .white : .black.opacity(0.3))

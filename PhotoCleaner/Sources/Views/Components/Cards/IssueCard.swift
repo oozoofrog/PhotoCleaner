@@ -14,6 +14,7 @@ struct IssueCard: View {
     let onTap: () -> Void
 
     @State private var isAnimating = false
+    @State private var isPressed = false
 
     var body: some View {
         Button(action: onTap) {
@@ -23,6 +24,7 @@ struct IssueCard: View {
                     Image(systemName: issueType.iconName)
                         .font(.system(size: IconSize.lg))
                         .foregroundStyle(issueType.color)
+                        .shadow(color: count > 0 ? issueType.color.opacity(0.4) : .clear, radius: 8)
 
                     Spacer()
 
@@ -32,6 +34,7 @@ struct IssueCard: View {
                             .foregroundStyle(issueType.color)
                             .contentTransition(.numericText())
                             .scaleEffect(isAnimating ? 1.15 : 1.0)
+                            .shadow(color: issueType.color.opacity(0.3), radius: 4)
                             .animation(.spring(response: 0.25, dampingFraction: 0.6), value: isAnimating)
                     }
                 }
@@ -58,17 +61,27 @@ struct IssueCard: View {
             }
             .padding(Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(AppColor.backgroundSecondary)
-            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md))
+            .glassCard()
+            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.lg))
             .overlay(
-                RoundedRectangle(cornerRadius: CornerRadius.md)
+                RoundedRectangle(cornerRadius: CornerRadius.lg)
                     .strokeBorder(
-                        isAnimating ? issueType.color.opacity(0.3) : Color.clear,
-                        lineWidth: 2
+                        LinearGradient(
+                            colors: [
+                                isPressed ? AppColor.accent.opacity(0.6) : (isAnimating ? issueType.color.opacity(0.3) : Color.white.opacity(0.1)),
+                                isPressed ? AppColor.accent.opacity(0.3) : (isAnimating ? issueType.color.opacity(0.15) : Color.clear)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: isPressed ? 2 : 1.5
                     )
             )
+            .shadow(color: isPressed ? AppColor.accent.opacity(0.3) : .clear, radius: 12)
+            .scaleEffect(isPressed ? 0.98 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: isPressed)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableButtonStyle(isPressed: $isPressed))
         .onChange(of: count) { oldValue, newValue in
             // 카운트 증가 시 애니메이션
             if newValue > oldValue && isUpdating {
@@ -82,5 +95,17 @@ struct IssueCard: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Pressable Button Style
+private struct PressableButtonStyle: ButtonStyle {
+    @Binding var isPressed: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .onChange(of: configuration.isPressed) { _, newValue in
+                isPressed = newValue
+            }
     }
 }

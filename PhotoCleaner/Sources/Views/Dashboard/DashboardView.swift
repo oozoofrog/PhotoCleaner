@@ -124,7 +124,7 @@ struct DashboardView: View {
             }
             .padding(Spacing.md)
         }
-        .background(AppColor.backgroundGrouped)
+        .premiumBackground()
         .refreshable {
             await viewModel.startScan()
         }

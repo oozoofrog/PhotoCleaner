@@ -24,6 +24,7 @@ struct SelectionToolbar: View {
                 }
             } label: {
                 Text(selectedCount == totalCount ? "전체 해제" : "전체 선택")
+                    .foregroundStyle(AppColor.accent)
             }
 
             Spacer()
@@ -41,6 +42,24 @@ struct SelectionToolbar: View {
             }
         }
         .padding(Spacing.md)
-        .background(.ultraThinMaterial)
+        .background {
+            ZStack(alignment: .top) {
+                // Glass material background
+                Color.clear
+                    .background(.ultraThinMaterial)
+
+                // Subtle top border gradient
+                LinearGradient(
+                    colors: [
+                        AppColor.textSecondary.opacity(0.2),
+                        AppColor.textSecondary.opacity(0.05)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 1)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }

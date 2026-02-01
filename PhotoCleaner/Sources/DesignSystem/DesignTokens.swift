@@ -36,20 +36,20 @@ public enum Spacing {
 
 /// 모서리 둥글기 토큰
 public enum CornerRadius {
-    /// 4pt - 작은 요소 (태그, 뱃지)
-    public static let xs: CGFloat = 4
+    /// 6pt - 작은 요소 (태그, 뱃지)
+    public static let xs: CGFloat = 6
 
-    /// 8pt - 중소형 요소 (버튼, 입력 필드)
-    public static let sm: CGFloat = 8
+    /// 10pt - 중소형 요소 (버튼, 입력 필드)
+    public static let sm: CGFloat = 10
 
-    /// 12pt - 중형 요소 (카드)
-    public static let md: CGFloat = 12
+    /// 16pt - 중형 요소 (카드)
+    public static let md: CGFloat = 16
 
-    /// 16pt - 대형 요소 (모달, 시트)
-    public static let lg: CGFloat = 16
+    /// 20pt - 대형 요소 (모달, 시트)
+    public static let lg: CGFloat = 20
 
-    /// 20pt - 초대형 요소 (전체 화면 카드)
-    public static let xl: CGFloat = 20
+    /// 28pt - 초대형 요소 (전체 화면 카드)
+    public static let xl: CGFloat = 28
 
     /// 원형
     public static let full: CGFloat = .infinity
@@ -187,6 +187,22 @@ public struct ShadowStyle {
         x: 0,
         y: 8
     )
+
+    /// 프리미엄 글로우 그림자
+    public static let glow = ShadowStyle(
+        color: Color(red: 0.85, green: 0.65, blue: 0.35).opacity(0.3),
+        radius: 20,
+        x: 0,
+        y: 0
+    )
+
+    /// 깊은 그림자 (다크모드용)
+    public static let deep = ShadowStyle(
+        color: Color.black.opacity(0.4),
+        radius: 30,
+        x: 0,
+        y: 10
+    )
 }
 
 // MARK: - Color Tokens
@@ -195,13 +211,33 @@ public struct ShadowStyle {
 /// 시맨틱 컬러를 사용하여 라이트/다크 모드 자동 대응
 public enum AppColor {
 
+    // MARK: - Premium Accent Colors
+
+    /// 골드 악센트 - 프리미엄 포인트 컬러
+    public static let accent = Color(red: 0.85, green: 0.65, blue: 0.35)
+
+    /// 악센트 그라데이션 시작
+    public static let accentGradientStart = Color(red: 0.9, green: 0.7, blue: 0.4)
+
+    /// 악센트 그라데이션 끝
+    public static let accentGradientEnd = Color(red: 0.75, green: 0.55, blue: 0.3)
+
+    /// 프리미엄 그라데이션
+    public static var premiumGradient: LinearGradient {
+        LinearGradient(
+            colors: [accentGradientStart, accentGradientEnd],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
     // MARK: Primary Colors
 
     /// 주요 액션, 선택 상태, 링크
-    public static let primary = Color.accentColor
+    public static let primary = accent
 
     /// 주요 액션 버튼 배경
-    public static let primaryFill = Color.accentColor
+    public static let primaryFill = accent
 
     /// 주요 액션 버튼 텍스트
     public static let primaryText = Color.white
@@ -394,6 +430,16 @@ public extension View {
         )
     }
 
+    /// 골드 글로우 효과
+    func accentGlow() -> some View {
+        self.shadow(
+            color: AppColor.accent.opacity(0.4),
+            radius: 16,
+            x: 0,
+            y: 0
+        )
+    }
+
     /// 카드 스타일 적용
     func cardStyle() -> some View {
         self
@@ -401,6 +447,64 @@ public extension View {
             .background(AppColor.backgroundSecondary)
             .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md))
             .subtleShadow()
+    }
+
+    /// 글래스모피즘 카드 스타일 (프리미엄)
+    func glassCard() -> some View {
+        self
+            .padding(Spacing.md)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.lg))
+            .overlay(
+                RoundedRectangle(cornerRadius: CornerRadius.lg)
+                    .strokeBorder(
+                        LinearGradient(
+                            colors: [.white.opacity(0.3), .white.opacity(0.1)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            )
+    }
+
+    /// 프리미엄 그라데이션 배경
+    func premiumBackground() -> some View {
+        self.background(
+            LinearGradient(
+                colors: [
+                    Color(white: 0.08),
+                    Color(white: 0.12),
+                    Color(white: 0.08)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+    }
+
+    /// 프리미엄 카드 스타일 (글래스 + 글로우)
+    func premiumCard() -> some View {
+        self
+            .padding(Spacing.md)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.lg))
+            .overlay(
+                RoundedRectangle(cornerRadius: CornerRadius.lg)
+                    .strokeBorder(
+                        LinearGradient(
+                            colors: [
+                                AppColor.accent.opacity(0.3),
+                                AppColor.accent.opacity(0.1),
+                                .clear
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            )
+            .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
     }
 
     /// 최소 터치 타겟 확보
@@ -423,11 +527,17 @@ public struct PrimaryButtonStyle: ButtonStyle {
             .foregroundStyle(AppColor.primaryText)
             .frame(maxWidth: .infinity)
             .frame(height: TouchTarget.minimum)
-            .background(
-                isEnabled
-                    ? AppColor.primaryFill
-                    : AppColor.primaryFill.opacity(Opacity.disabled)
-            )
+            .background {
+                if isEnabled {
+                    AppColor.premiumGradient
+                } else {
+                    LinearGradient(
+                        colors: [AppColor.accent.opacity(Opacity.disabled)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                }
+            }
             .clipShape(RoundedRectangle(cornerRadius: CornerRadius.sm))
             .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
             .animation(.easeOut(duration: AnimationDuration.micro), value: configuration.isPressed)
@@ -521,10 +631,46 @@ public extension ButtonStyle where Self == GhostButtonStyle {
 #Preview("Design Tokens") {
     ScrollView {
         VStack(alignment: .leading, spacing: Spacing.lg) {
+            // Premium Accent Colors
+            Section {
+                VStack(alignment: .leading, spacing: Spacing.md) {
+                    HStack(spacing: Spacing.md) {
+                        Circle()
+                            .fill(AppColor.accent)
+                            .frame(width: 40, height: 40)
+                            .accentGlow()
+                        VStack(alignment: .leading) {
+                            Text("Premium Gold Accent")
+                                .font(Typography.headline)
+                                .foregroundStyle(AppColor.accent)
+                            Text("프리미엄 골드 악센트")
+                                .font(Typography.caption)
+                                .foregroundStyle(AppColor.textSecondary)
+                        }
+                    }
+
+                    Rectangle()
+                        .fill(AppColor.premiumGradient)
+                        .frame(height: 60)
+                        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md))
+                        .overlay(
+                            Text("Premium Gradient")
+                                .font(Typography.headline)
+                                .foregroundStyle(.white)
+                        )
+                }
+            } header: {
+                Text("Premium Colors")
+                    .font(Typography.title2)
+                    .foregroundStyle(AppColor.accent)
+            }
+
+            Divider()
+
             // Colors
             Section {
                 VStack(alignment: .leading, spacing: Spacing.sm) {
-                    Text("Primary")
+                    Text("Primary (Gold)")
                         .foregroundStyle(AppColor.primary)
                     Text("Secondary")
                         .foregroundStyle(AppColor.secondary)
@@ -536,7 +682,7 @@ public extension ButtonStyle where Self == GhostButtonStyle {
                         .foregroundStyle(AppColor.warning)
                 }
             } header: {
-                Text("Colors")
+                Text("Semantic Colors")
                     .font(Typography.title2)
             }
 
@@ -557,6 +703,7 @@ public extension ButtonStyle where Self == GhostButtonStyle {
                         .font(Typography.caption)
                     Text("127")
                         .font(Typography.largeNumber)
+                        .foregroundStyle(AppColor.accent)
                 }
             } header: {
                 Text("Typography")
@@ -568,7 +715,7 @@ public extension ButtonStyle where Self == GhostButtonStyle {
             // Buttons
             Section {
                 VStack(spacing: Spacing.md) {
-                    Button("Primary Button") {}
+                    Button("Premium Gradient Button") {}
                         .buttonStyle(.primary)
 
                     Button("Secondary Button") {}
@@ -587,18 +734,73 @@ public extension ButtonStyle where Self == GhostButtonStyle {
 
             Divider()
 
-            // Cards
+            // Card Styles
             Section {
-                VStack(alignment: .leading, spacing: Spacing.sm) {
-                    Text("Card Title")
-                        .font(Typography.headline)
-                    Text("This is a card with the standard card style applied.")
-                        .font(Typography.body)
-                        .foregroundStyle(AppColor.textSecondary)
+                VStack(spacing: Spacing.md) {
+                    VStack(alignment: .leading, spacing: Spacing.sm) {
+                        Text("Standard Card")
+                            .font(Typography.headline)
+                        Text("기본 카드 스타일")
+                            .font(Typography.body)
+                            .foregroundStyle(AppColor.textSecondary)
+                    }
+                    .cardStyle()
+
+                    VStack(alignment: .leading, spacing: Spacing.sm) {
+                        Text("Glass Card")
+                            .font(Typography.headline)
+                        Text("글래스모피즘 효과")
+                            .font(Typography.body)
+                            .foregroundStyle(AppColor.textSecondary)
+                    }
+                    .glassCard()
+
+                    VStack(alignment: .leading, spacing: Spacing.sm) {
+                        Text("Premium Card")
+                            .font(Typography.headline)
+                            .foregroundStyle(AppColor.accent)
+                        Text("프리미엄 글래스 + 골드 글로우")
+                            .font(Typography.body)
+                            .foregroundStyle(AppColor.textSecondary)
+                    }
+                    .premiumCard()
                 }
-                .cardStyle()
             } header: {
-                Text("Card Style")
+                Text("Card Styles")
+                    .font(Typography.title2)
+            }
+
+            Divider()
+
+            // Shadow Styles
+            Section {
+                VStack(spacing: Spacing.md) {
+                    Text("Glow Shadow")
+                        .font(Typography.headline)
+                        .padding()
+                        .background(AppColor.backgroundSecondary)
+                        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md))
+                        .shadow(
+                            color: ShadowStyle.glow.color,
+                            radius: ShadowStyle.glow.radius,
+                            x: ShadowStyle.glow.x,
+                            y: ShadowStyle.glow.y
+                        )
+
+                    Text("Deep Shadow")
+                        .font(Typography.headline)
+                        .padding()
+                        .background(AppColor.backgroundSecondary)
+                        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md))
+                        .shadow(
+                            color: ShadowStyle.deep.color,
+                            radius: ShadowStyle.deep.radius,
+                            x: ShadowStyle.deep.x,
+                            y: ShadowStyle.deep.y
+                        )
+                }
+            } header: {
+                Text("Premium Shadows")
                     .font(Typography.title2)
             }
 
@@ -617,12 +819,13 @@ public extension ButtonStyle where Self == GhostButtonStyle {
                         .foregroundStyle(AppColor.success)
                 }
             } header: {
-                Text("Semantic Colors")
+                Text("Status Indicators")
                     .font(Typography.title2)
             }
         }
         .padding(Spacing.md)
     }
-    .background(AppColor.backgroundPrimary)
+    .premiumBackground()
+    .preferredColorScheme(.dark)
 }
 #endif

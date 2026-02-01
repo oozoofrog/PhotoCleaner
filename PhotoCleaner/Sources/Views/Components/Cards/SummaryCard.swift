@@ -38,9 +38,19 @@ struct SummaryCard: View {
             // 스캔 중 인라인 프로그레스 바
             if isScanning, let progress = scanProgress, progress.total > 0 {
                 VStack(spacing: Spacing.xs) {
-                    ProgressView(value: progress.progress)
-                        .progressViewStyle(.linear)
-                        .tint(AppColor.primary)
+                    ZStack(alignment: .leading) {
+                        // Background track
+                        RoundedRectangle(cornerRadius: CornerRadius.sm)
+                            .fill(AppColor.backgroundTertiary)
+                            .frame(height: 6)
+
+                        // Gradient progress fill
+                        RoundedRectangle(cornerRadius: CornerRadius.sm)
+                            .fill(AppColor.premiumGradient)
+                            .frame(width: CGFloat(progress.progress) * 300, height: 6)
+                            .animation(.spring(response: 0.3), value: progress.progress)
+                    }
+                    .frame(height: 6)
 
                     HStack {
                         Text(progress.displayText)
@@ -74,7 +84,8 @@ struct SummaryCard: View {
                                 // 실시간 이슈 카운트 (애니메이션)
                                 Text("\(displayIssueCount)")
                                     .font(Typography.headline)
-                                    .foregroundStyle(AppColor.textPrimary)
+                                    .foregroundStyle(AppColor.accent)
+                                    .accentGlow()
                                     .contentTransition(.numericText())
                                     .animation(.spring(response: 0.3), value: displayIssueCount)
                                 Text("장에 문제 발견")
@@ -103,7 +114,7 @@ struct SummaryCard: View {
                     } else if scanWasCancelled {
                         Text("검사가 취소되었습니다 (\(cancelledProcessedCount)장 처리됨)")
                             .font(Typography.caption)
-                            .foregroundStyle(AppColor.warning)
+                            .foregroundStyle(AppColor.accent)
                     } else if let lastScan = lastScanDate {
                         Text("마지막 검사: \(lastScan)")
                             .font(Typography.caption)
@@ -116,7 +127,8 @@ struct SummaryCard: View {
                 if displayIssueCount > 0 {
                     Text("\(displayIssueCount)")
                         .font(Typography.largeNumber)
-                        .foregroundStyle(AppColor.warning)
+                        .foregroundStyle(AppColor.accent)
+                        .accentGlow()
                         .contentTransition(.numericText())
                         .animation(.spring(response: 0.3), value: displayIssueCount)
                 }
@@ -146,7 +158,6 @@ struct SummaryCard: View {
             }
         }
         .padding(Spacing.lg)
-        .background(AppColor.backgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.lg))
+        .premiumCard()
     }
 }

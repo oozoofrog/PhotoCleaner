@@ -24,7 +24,13 @@ struct PhotoThumbnailView: View {
             ZStack(alignment: .topTrailing) {
                 // 썸네일 (레이아웃이 크기 결정, 자연 비율 유지)
                 thumbnailContent
-                    .clipShape(RoundedRectangle(cornerRadius: CornerRadius.sm))
+                    .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md))
+                    .shadow(
+                        color: .black.opacity(0.15),
+                        radius: 4,
+                        x: 0,
+                        y: 2
+                    )
 
                 // 문제 유형 배지
                 if !isSelectionMode {
@@ -41,7 +47,7 @@ struct PhotoThumbnailView: View {
                 if isSelectionMode {
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: IconSize.md))
-                        .foregroundStyle(isSelected ? AppColor.primary : .white)
+                        .foregroundStyle(isSelected ? AppColor.accent : .white)
                         .background(
                             Circle()
                                 .fill(isSelected ? .white : .black.opacity(0.3))
@@ -52,10 +58,16 @@ struct PhotoThumbnailView: View {
             }
             .overlay {
                 if isSelected {
-                    RoundedRectangle(cornerRadius: CornerRadius.sm)
-                        .stroke(AppColor.primary, lineWidth: 3)
+                    RoundedRectangle(cornerRadius: CornerRadius.md)
+                        .stroke(AppColor.accent, lineWidth: 3)
                 }
             }
+            .shadow(
+                color: isSelected ? AppColor.accent.opacity(0.4) : .clear,
+                radius: 8,
+                x: 0,
+                y: 0
+            )
         }
         .buttonStyle(.plain)
         .task {
