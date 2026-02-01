@@ -142,7 +142,7 @@ struct DuplicatePhotoCell: View {
     private var originalBadge: some View {
         Text("원본")
             .font(.system(size: 10, weight: .bold))
-            .foregroundStyle(.white)
+            .foregroundStyle(AppColor.accentOnAccent)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(AppColor.accent)
@@ -156,7 +156,7 @@ struct DuplicatePhotoCell: View {
                 Spacer()
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: IconSize.md))
-                    .foregroundStyle(isSelected ? AppColor.accent : .white)
+                    .foregroundStyle(isSelected ? AppColor.accentCheck : .white)
                     .background(
                         Circle()
                             .fill(isSelected ? .white : .black.opacity(0.3))

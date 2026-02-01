@@ -24,7 +24,7 @@ struct SelectionToolbar: View {
                 }
             } label: {
                 Text(selectedCount == totalCount ? "전체 해제" : "전체 선택")
-                    .foregroundStyle(AppColor.accent)
+                    .foregroundStyle(AppColor.accentText)
             }
 
             Spacer()

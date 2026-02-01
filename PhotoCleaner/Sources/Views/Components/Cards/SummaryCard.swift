@@ -59,7 +59,7 @@ struct SummaryCard: View {
                         Spacer()
                         Text("\(Int(progress.progress * 100))%")
                             .font(Typography.caption)
-                            .foregroundStyle(AppColor.textTertiary)
+                            .foregroundStyle(AppColor.textSecondary)
                     }
                 }
             }
@@ -118,7 +118,7 @@ struct SummaryCard: View {
                     } else if let lastScan = lastScanDate {
                         Text("마지막 검사: \(lastScan)")
                             .font(Typography.caption)
-                            .foregroundStyle(AppColor.textTertiary)
+                            .foregroundStyle(AppColor.textSecondary)
                     }
                 }
 

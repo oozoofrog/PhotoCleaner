@@ -36,7 +36,7 @@ struct PhotoThumbnailView: View {
                 if !isSelectionMode {
                     Image(systemName: issue.issueType.iconName)
                         .font(.system(size: IconSize.sm))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(AppColor.accentOnAccent)
                         .padding(Spacing.xs)
                         .background(issue.issueType.color)
                         .clipShape(Circle())
@@ -47,7 +47,7 @@ struct PhotoThumbnailView: View {
                 if isSelectionMode {
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: IconSize.md))
-                        .foregroundStyle(isSelected ? AppColor.accent : .white)
+                        .foregroundStyle(isSelected ? AppColor.accentCheck : .white)
                         .background(
                             Circle()
                                 .fill(isSelected ? .white : .black.opacity(0.3))

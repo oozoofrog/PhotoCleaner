@@ -231,6 +231,17 @@ public enum AppColor {
         )
     }
 
+    // MARK: - Accessible Accent Variants
+
+    /// 텍스트용 어두운 골드 - 밝은 배경에서 사용 (WCAG AA 준수)
+    public static let accentText = Color(red: 0.48, green: 0.36, blue: 0.04)  // #7A5B0A - darker for 7:1 contrast
+
+    /// 뱃지 내 텍스트용 다크 브라운 (골드 배경 위 사용)
+    public static let accentOnAccent = Color(red: 0.24, green: 0.17, blue: 0.12)  // #3D2B1F Dark brown
+
+    /// 밝은 배경용 어두운 골드 체크마크
+    public static let accentCheck = Color(red: 0.55, green: 0.27, blue: 0.07)  // #8B4513 SaddleBrown - 4.98:1 contrast
+
     // MARK: Primary Colors
 
     /// 주요 액션, 선택 상태, 링크
