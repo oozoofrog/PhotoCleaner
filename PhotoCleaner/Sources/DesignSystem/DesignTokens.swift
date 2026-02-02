@@ -8,6 +8,24 @@
 
 import SwiftUI
 
+// MARK: - Color Adaptive Extension
+
+public extension Color {
+    /// 라이트/다크 모드에 따라 다른 색상을 반환
+    static func adaptive(light: Color, dark: Color) -> Color {
+        Color(
+            UIColor { traitCollection in
+                switch traitCollection.userInterfaceStyle {
+                case .dark:
+                    return UIColor(dark)
+                default:
+                    return UIColor(light)
+                }
+            }
+        )
+    }
+}
+
 // MARK: - Spacing Tokens
 
 /// 8pt 기반 간격 시스템
@@ -155,55 +173,77 @@ public enum Opacity {
     public static let opaque: Double = 1.0
 }
 
-// MARK: - Shadow Tokens
+    // MARK: - Shadow Tokens
 
-/// 그림자 스타일 토큰
-public struct ShadowStyle {
-    let color: Color
-    let radius: CGFloat
-    let x: CGFloat
-    let y: CGFloat
+    /// 그림자 스타일 토큰 (라이트/다크 모드 대응)
+    public struct ShadowStyle {
+        let color: Color
+        let radius: CGFloat
+        let x: CGFloat
+        let y: CGFloat
 
-    /// 미세한 그림자 (카드)
-    public static let subtle = ShadowStyle(
-        color: Color.black.opacity(0.08),
-        radius: 8,
-        x: 0,
-        y: 2
-    )
+        /// 미세한 그림자 (카드)
+        public static var subtle: ShadowStyle {
+            ShadowStyle(
+                color: Color.adaptive(
+                    light: Color.black.opacity(0.06),
+                    dark: Color.black.opacity(0.15)
+                ),
+                radius: 8,
+                x: 0,
+                y: 2
+            )
+        }
 
-    /// 중간 그림자 (플로팅 요소)
-    public static let medium = ShadowStyle(
-        color: Color.black.opacity(0.12),
-        radius: 16,
-        x: 0,
-        y: 4
-    )
+        /// 중간 그림자 (플로팅 요소)
+        public static var medium: ShadowStyle {
+            ShadowStyle(
+                color: Color.adaptive(
+                    light: Color.black.opacity(0.1),
+                    dark: Color.black.opacity(0.2)
+                ),
+                radius: 16,
+                x: 0,
+                y: 4
+            )
+        }
 
-    /// 강한 그림자 (모달)
-    public static let strong = ShadowStyle(
-        color: Color.black.opacity(0.2),
-        radius: 24,
-        x: 0,
-        y: 8
-    )
+        /// 강한 그림자 (모달)
+        public static var strong: ShadowStyle {
+            ShadowStyle(
+                color: Color.adaptive(
+                    light: Color.black.opacity(0.15),
+                    dark: Color.black.opacity(0.35)
+                ),
+                radius: 24,
+                x: 0,
+                y: 8
+            )
+        }
 
-    /// 프리미엄 글로우 그림자
-    public static let glow = ShadowStyle(
-        color: Color(red: 0.85, green: 0.65, blue: 0.35).opacity(0.3),
-        radius: 20,
-        x: 0,
-        y: 0
-    )
+        /// 프리미엄 글로우 그림자
+        public static var glow: ShadowStyle {
+            ShadowStyle(
+                color: AppColor.accent.opacity(0.25),
+                radius: 20,
+                x: 0,
+                y: 0
+            )
+        }
 
-    /// 깊은 그림자 (다크모드용)
-    public static let deep = ShadowStyle(
-        color: Color.black.opacity(0.4),
-        radius: 30,
-        x: 0,
-        y: 10
-    )
-}
+        /// 깊은 그림자 (다크모드용)
+        public static var deep: ShadowStyle {
+            ShadowStyle(
+                color: Color.adaptive(
+                    light: Color.black.opacity(0.2),
+                    dark: Color.black.opacity(0.5)
+                ),
+                radius: 30,
+                x: 0,
+                y: 10
+            )
+        }
+    }
 
 // MARK: - Color Tokens
 
@@ -211,16 +251,31 @@ public struct ShadowStyle {
 /// 시맨틱 컬러를 사용하여 라이트/다크 모드 자동 대응
 public enum AppColor {
 
-    // MARK: - Premium Accent Colors
+    // MARK: - Premium Accent Colors (Adaptive)
 
-    /// 골드 악센트 - 프리미엄 포인트 컬러
-    public static let accent = Color(red: 0.85, green: 0.65, blue: 0.35)
+    /// 골드 악센트 - 프리미엄 포인트 컬러 (라이트/다크 모드 대응)
+    public static var accent: Color {
+        Color.adaptive(
+            light: Color(red: 0.75, green: 0.55, blue: 0.25),  // 라이트: 더 진한 골드
+            dark: Color(red: 0.85, green: 0.65, blue: 0.35)    // 다크: 밝은 골드
+        )
+    }
 
     /// 악센트 그라데이션 시작
-    public static let accentGradientStart = Color(red: 0.9, green: 0.7, blue: 0.4)
+    public static var accentGradientStart: Color {
+        Color.adaptive(
+            light: Color(red: 0.8, green: 0.6, blue: 0.3),
+            dark: Color(red: 0.9, green: 0.7, blue: 0.4)
+        )
+    }
 
     /// 악센트 그라데이션 끝
-    public static let accentGradientEnd = Color(red: 0.75, green: 0.55, blue: 0.3)
+    public static var accentGradientEnd: Color {
+        Color.adaptive(
+            light: Color(red: 0.65, green: 0.45, blue: 0.2),
+            dark: Color(red: 0.75, green: 0.55, blue: 0.3)
+        )
+    }
 
     /// 프리미엄 그라데이션
     public static var premiumGradient: LinearGradient {
@@ -231,16 +286,31 @@ public enum AppColor {
         )
     }
 
-    // MARK: - Accessible Accent Variants
+    // MARK: - Accessible Accent Variants (Adaptive)
 
-    /// 텍스트용 어두운 골드 - 밝은 배경에서 사용 (WCAG AA 준수)
-    public static let accentText = Color(red: 0.48, green: 0.36, blue: 0.04)  // #7A5B0A - darker for 7:1 contrast
+    /// 텍스트용 어두운 골드 - 배경에 따라 대비 조정
+    public static var accentText: Color {
+        Color.adaptive(
+            light: Color(red: 0.48, green: 0.36, blue: 0.04),  // 라이트: 어두운 골드
+            dark: Color(red: 0.95, green: 0.75, blue: 0.45)    // 다크: 밝은 골드
+        )
+    }
 
-    /// 뱃지 내 텍스트용 다크 브라운 (골드 배경 위 사용)
-    public static let accentOnAccent = Color(red: 0.24, green: 0.17, blue: 0.12)  // #3D2B1F Dark brown
+    /// 뱃지 내 텍스트용 (골드 배경 위 사용)
+    public static var accentOnAccent: Color {
+        Color.adaptive(
+            light: Color(red: 0.24, green: 0.17, blue: 0.12),  // 라이트: 다크 브라운
+            dark: Color(red: 0.15, green: 0.1, blue: 0.05)     // 다크: 더 어두운 브라운
+        )
+    }
 
-    /// 밝은 배경용 어두운 골드 체크마크
-    public static let accentCheck = Color(red: 0.55, green: 0.27, blue: 0.07)  // #8B4513 SaddleBrown - 4.98:1 contrast
+    /// 체크마크용 골드
+    public static var accentCheck: Color {
+        Color.adaptive(
+            light: Color(red: 0.55, green: 0.27, blue: 0.07),  // 라이트: 새들브라운
+            dark: Color(red: 0.9, green: 0.7, blue: 0.4)       // 다크: 밝은 골드
+        )
+    }
 
     // MARK: Primary Colors
 
@@ -479,14 +549,23 @@ public extension View {
             )
     }
 
-    /// 프리미엄 그라데이션 배경
+    /// 프리미엄 그라데이션 배경 (라이트/다크 모드 대응)
     func premiumBackground() -> some View {
         self.background(
             LinearGradient(
                 colors: [
-                    Color(white: 0.08),
-                    Color(white: 0.12),
-                    Color(white: 0.08)
+                    Color.adaptive(
+                        light: Color(white: 0.98),
+                        dark: Color(white: 0.08)
+                    ),
+                    Color.adaptive(
+                        light: Color(white: 0.95),
+                        dark: Color(white: 0.12)
+                    ),
+                    Color.adaptive(
+                        light: Color(white: 0.98),
+                        dark: Color(white: 0.08)
+                    )
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -831,6 +910,187 @@ public extension ButtonStyle where Self == GhostButtonStyle {
                 }
             } header: {
                 Text("Status Indicators")
+                    .font(Typography.title2)
+            }
+        }
+        .padding(Spacing.md)
+    }
+    .premiumBackground()
+}
+
+#Preview("Design Tokens - Light Mode") {
+    ScrollView {
+        VStack(alignment: .leading, spacing: Spacing.lg) {
+            // Premium Accent Colors
+            Section {
+                VStack(alignment: .leading, spacing: Spacing.md) {
+                    HStack(spacing: Spacing.md) {
+                        Circle()
+                            .fill(AppColor.accent)
+                            .frame(width: 40, height: 40)
+                            .accentGlow()
+                        VStack(alignment: .leading) {
+                            Text("Premium Gold Accent")
+                                .font(Typography.headline)
+                                .foregroundStyle(AppColor.accent)
+                            Text("라이트 모드")
+                                .font(Typography.caption)
+                                .foregroundStyle(AppColor.textSecondary)
+                        }
+                    }
+
+                    Rectangle()
+                        .fill(AppColor.premiumGradient)
+                        .frame(height: 60)
+                        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md))
+                        .overlay(
+                            Text("Premium Gradient")
+                                .font(Typography.headline)
+                                .foregroundStyle(.white)
+                        )
+                }
+            } header: {
+                Text("Premium Colors (Light)")
+                    .font(Typography.title2)
+                    .foregroundStyle(AppColor.accent)
+            }
+
+            Divider()
+
+            // Card Styles
+            Section {
+                VStack(spacing: Spacing.md) {
+                    VStack(alignment: .leading, spacing: Spacing.sm) {
+                        Text("Standard Card")
+                            .font(Typography.headline)
+                        Text("라이트 모드 카드 스타일")
+                            .font(Typography.body)
+                            .foregroundStyle(AppColor.textSecondary)
+                    }
+                    .cardStyle()
+
+                    VStack(alignment: .leading, spacing: Spacing.sm) {
+                        Text("Premium Card")
+                            .font(Typography.headline)
+                            .foregroundStyle(AppColor.accent)
+                        Text("라이트 모드 프리미엄 카드")
+                            .font(Typography.body)
+                            .foregroundStyle(AppColor.textSecondary)
+                    }
+                    .premiumCard()
+                }
+            } header: {
+                Text("Card Styles (Light)")
+                    .font(Typography.title2)
+            }
+
+            Divider()
+
+            // Buttons
+            Section {
+                VStack(spacing: Spacing.md) {
+                    Button("Premium Gradient Button") {}
+                        .buttonStyle(.primary)
+
+                    Button("Secondary Button") {}
+                        .buttonStyle(.secondary)
+
+                    Button("Ghost Button") {}
+                        .buttonStyle(.ghost)
+                }
+            } header: {
+                Text("Buttons (Light)")
+                    .font(Typography.title2)
+            }
+        }
+        .padding(Spacing.md)
+    }
+    .premiumBackground()
+    .preferredColorScheme(.light)
+}
+
+#Preview("Design Tokens - Dark Mode") {
+    ScrollView {
+        VStack(alignment: .leading, spacing: Spacing.lg) {
+            // Premium Accent Colors
+            Section {
+                VStack(alignment: .leading, spacing: Spacing.md) {
+                    HStack(spacing: Spacing.md) {
+                        Circle()
+                            .fill(AppColor.accent)
+                            .frame(width: 40, height: 40)
+                            .accentGlow()
+                        VStack(alignment: .leading) {
+                            Text("Premium Gold Accent")
+                                .font(Typography.headline)
+                                .foregroundStyle(AppColor.accent)
+                            Text("다크 모드")
+                                .font(Typography.caption)
+                                .foregroundStyle(AppColor.textSecondary)
+                        }
+                    }
+
+                    Rectangle()
+                        .fill(AppColor.premiumGradient)
+                        .frame(height: 60)
+                        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md))
+                        .overlay(
+                            Text("Premium Gradient")
+                                .font(Typography.headline)
+                                .foregroundStyle(.white)
+                        )
+                }
+            } header: {
+                Text("Premium Colors (Dark)")
+                    .font(Typography.title2)
+                    .foregroundStyle(AppColor.accent)
+            }
+
+            Divider()
+
+            // Card Styles
+            Section {
+                VStack(spacing: Spacing.md) {
+                    VStack(alignment: .leading, spacing: Spacing.sm) {
+                        Text("Standard Card")
+                            .font(Typography.headline)
+                        Text("다크 모드 카드 스타일")
+                            .font(Typography.body)
+                            .foregroundStyle(AppColor.textSecondary)
+                    }
+                    .cardStyle()
+
+                    VStack(alignment: .leading, spacing: Spacing.sm) {
+                        Text("Premium Card")
+                            .font(Typography.headline)
+                            .foregroundStyle(AppColor.accent)
+                        Text("다크 모드 프리미엄 카드")
+                            .font(Typography.body)
+                            .foregroundStyle(AppColor.textSecondary)
+                    }
+                    .premiumCard()
+                }
+            } header: {
+                Text("Card Styles (Dark)")
+                    .font(Typography.title2)
+            }
+
+            Divider()
+
+            // Buttons
+            Section {
+                VStack(spacing: Spacing.md) {
+                    Button("Premium Gradient Button") {}
+                        .buttonStyle(.primary)
+
+                    Button("Secondary Button") {}
+                        .buttonStyle(.secondary)
+
+                    Button("Ghost Button") {}
+                        .buttonStyle(.ghost)
+                }
+            } header: {
+                Text("Buttons (Dark)")
                     .font(Typography.title2)
             }
         }
