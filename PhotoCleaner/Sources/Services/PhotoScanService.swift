@@ -715,6 +715,107 @@ actor PhotoScanService {
         cachedResult = nil
     }
 
+    // MARK: - Duplicate Detection Only
+
+    /// 중복 사진만 스캔 (별도 기능)
+    /// 사진 라이브러리 접근 권한만 필요, 다른 검사 없이 중복만 찾기
+    func scanDuplicatesOnly(
+        duplicateDetectionMode: DuplicateDetectionMode = .includeSimilar,
+        similarityThreshold: SimilarityThreshold = .percent95,
+        progressHandler: @escaping @MainActor @Sendable (ScanProgress) -> Void
+    ) async throws -> ScanResult {
+        await progressHandler(ScanProgress(phase: .preparing, current: 0, total: 0))
+
+        let fetchOptions = PHFetchOptions()
+        fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+
+        let allAssets = PHAsset.fetchAssets(with: .image, options: fetchOptions)
+        let total = allAssets.count
+
+        guard total > 0 else {
+            return ScanResult(
+                totalPhotos: 0,
+                issues: [],
+                summaries: [],
+                duplicateGroups: [],
+                scannedAt: Date()
+            )
+        }
+
+        let assets = convertToArray(allAssets)
+
+        await progressHandler(ScanProgress(phase: .scanning, current: 0, total: total, currentIssueType: .duplicate))
+
+        // 정확한 중복 스캔
+        let duplicateResult = await scanExactDuplicates(assets: assets, progressHandler: progressHandler)
+        var allDuplicateGroups = duplicateResult.groups
+        var issues = duplicateResult.issues
+
+        // 유사한 사진도 포함하는 경우
+        if duplicateDetectionMode == .includeSimilar {
+            let exactDuplicateAssetIds = Set(duplicateResult.groups.flatMap { $0.assetIdentifiers })
+            let remainingAssets = assets.filter { !exactDuplicateAssetIds.contains($0.localIdentifier) }
+
+            let similarResult = await scanSimilarPhotos(
+                assets: remainingAssets,
+                similarityThreshold: similarityThreshold.floatValue,
+                progressHandler: progressHandler
+            )
+            issues.append(contentsOf: similarResult.issues)
+            allDuplicateGroups.append(contentsOf: similarResult.groups)
+        }
+
+        let summaries = createSummaries(from: issues)
+
+        let result = ScanResult(
+            totalPhotos: total,
+            issues: issues,
+            summaries: summaries,
+            duplicateGroups: allDuplicateGroups,
+            scannedAt: Date()
+        )
+
+        // 기존 결과와 병합 (있는 경우)
+        if let existingResult = cachedResult {
+            let mergedResult = mergeDuplicateResult(existing: existingResult, newDuplicates: result)
+            cachedResult = mergedResult
+            await progressHandler(ScanProgress(phase: .completed, current: total, total: total))
+            return mergedResult
+        } else {
+            cachedResult = result
+            await progressHandler(ScanProgress(phase: .completed, current: total, total: total))
+            return result
+        }
+    }
+
+    /// 중복 스캔 결과 병합
+    private nonisolated func mergeDuplicateResult(existing: ScanResult, newDuplicates: ScanResult) -> ScanResult {
+        // 기존 중복이 아닌 이슈들
+        let nonDuplicateIssues = existing.issues.filter { $0.issueType != .duplicate }
+
+        // 새로운 중복 결과
+        let duplicateIssues = newDuplicates.issues
+        let duplicateGroups = newDuplicates.duplicateGroups
+
+        // 모든 이슈 합치기
+        let mergedIssues = nonDuplicateIssues + duplicateIssues
+
+        // 요약 정보 업데이트
+        var summaries = existing.summaries.filter { $0.issueType != .duplicate }
+        let duplicateSummary = newDuplicates.summaries.first { $0.issueType == .duplicate }
+        if let duplicateSummary = duplicateSummary {
+            summaries.append(duplicateSummary)
+        }
+
+        return ScanResult(
+            totalPhotos: existing.totalPhotos,
+            issues: mergedIssues,
+            summaries: summaries,
+            duplicateGroups: duplicateGroups,
+            scannedAt: Date()
+        )
+    }
+
     // MARK: - Progress Debouncing
 
     /// 진행률 업데이트 필요 여부 (debouncing)
