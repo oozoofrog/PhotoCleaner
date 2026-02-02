@@ -318,6 +318,47 @@ final class DashboardViewModel {
         scanProgress = nil
     }
 
+    /// 중복 사진만 검사 (별도 기능)
+    func scanDuplicatesOnly() async {
+        guard permissionService.status.canAccess else {
+            appState = .error("사진 접근 권한이 필요합니다.")
+            return
+        }
+
+        // 기존 스캔 취소
+        cancelScan()
+
+        // 상태 초기화
+        appState = .scanning
+        scanProgress = ScanProgress(phase: .preparing, current: 0, total: 0)
+        liveIssues = []
+        liveDuplicateGroups = []
+        liveSummaries = [:]
+        scanWasCancelled = false
+        cancelledProcessedCount = 0
+
+        // 설정 가져오기
+        let duplicateMode = AppSettings.shared.duplicateDetectionMode
+        let similarityThreshold = AppSettings.shared.similarityThreshold
+
+        do {
+            let result = try await scanService.scanDuplicatesOnly(
+                duplicateDetectionMode: duplicateMode,
+                similarityThreshold: similarityThreshold
+            ) { @MainActor [weak self] progress in
+                self?.scanProgress = progress
+            }
+
+            scanResult = result
+            lastScanDate = Date()
+            appState = .ready
+        } catch {
+            appState = .error("중복 사진 검사 중 오류가 발생했습니다: \(error.localizedDescription)")
+        }
+
+        scanProgress = nil
+    }
+
     func summary(for type: IssueType) -> IssueSummary? {
         scanResult?.summary(for: type)
     }
