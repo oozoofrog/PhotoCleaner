@@ -19,6 +19,7 @@ struct SummaryCard: View {
     let onScan: () -> Void
     var onCancel: (() -> Void)?
     var onViewAllPhotos: (() -> Void)?
+    var onScanDuplicates: (() -> Void)?
 
     /// 현재 표시할 이슈 개수
     private var displayIssueCount: Int {
@@ -147,14 +148,30 @@ struct SummaryCard: View {
                 }
                 .buttonStyle(.destructive)
             } else {
-                Button(action: onScan) {
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                        Text(totalPhotos > 0 ? "다시 검사하기" : "검사 시작하기")
+                VStack(spacing: Spacing.sm) {
+                    Button(action: onScan) {
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                            Text(totalPhotos > 0 ? "다시 검사하기" : "검사 시작하기")
+                        }
+                        .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
+                    .buttonStyle(.primary)
+
+                    // 중복 사진 찾기 버튼 (별도 기능)
+                    if totalPhotos > 0 {
+                        Button {
+                            onScanDuplicates?()
+                        } label: {
+                            HStack {
+                                Image(systemName: "square.on.square")
+                                Text("중복 사진 찾기")
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.secondary)
+                    }
                 }
-                .buttonStyle(.primary)
             }
         }
         .padding(Spacing.lg)

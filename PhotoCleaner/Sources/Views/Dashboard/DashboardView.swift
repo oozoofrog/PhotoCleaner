@@ -109,6 +109,9 @@ struct DashboardView: View {
                     },
                     onViewAllPhotos: {
                         showAllPhotos = true
+                    },
+                    onScanDuplicates: {
+                        Task { await viewModel.scanDuplicatesOnly() }
                     }
                 )
 
