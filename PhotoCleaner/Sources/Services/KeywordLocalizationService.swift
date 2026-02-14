@@ -43,7 +43,7 @@ struct KeywordLocalizationService: Sendable {
     }
 
     func isKorean(locale: Locale = .current) -> Bool {
-        guard let languageCode = locale.languageCode?.lowercased() else { return false }
+        guard let languageCode = locale.language.languageCode?.identifier.lowercased() else { return false }
         return languageCode == "ko"
     }
 }
