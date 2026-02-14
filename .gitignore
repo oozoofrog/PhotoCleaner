@@ -59,6 +59,7 @@ buildServer.json
 *.dSYM
 *.app
 .build-log.txt
+.build-result.toon
 
 # IDE & Tools
 .cursor/

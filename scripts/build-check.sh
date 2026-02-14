@@ -54,6 +54,66 @@ validate_project() {
     fi
 }
 
+resolve_test_destination() {
+    local destination_line
+    local destination_name
+    local destination_id
+
+    if command -v xcodebuild >/dev/null 2>&1; then
+        destination_line="$(xcodebuild -project "$PROJECT_PATH" -scheme "$SCHEME" -showdestinations 2>/dev/null \
+            | awk '
+                /{ platform:iOS Simulator/ {
+                    if ($0 !~ /Any iOS Simulator Device/) {
+                        print;
+                        exit;
+                    }
+                }'
+        )"
+        if [ -n "${destination_line:-}" ]; then
+            destination_name="$(printf '%s' "$destination_line" | sed -n 's/.*name:\([^,}]*\).*/\1/p' | head -n 1 | xargs)"
+            destination_id="$(printf '%s' "$destination_line" | sed -n 's/.*id:\([^,}]*\).*/\1/p' | head -n 1 | xargs)"
+            if [ -n "${destination_id:-}" ] && [ "$destination_id" != "dvtdevice-DVTiOSDeviceSimulatorPlaceholder-iphonesimulator:placeholder" ]; then
+                echo "id=$destination_id"
+                return 0
+            fi
+            if [ -n "${destination_name:-}" ] && [ "$destination_name" != "Any iOS Simulator Device" ]; then
+                echo "platform=iOS Simulator,name=$destination_name"
+                return 0
+            fi
+        fi
+    fi
+
+    if command -v xcrun >/dev/null 2>&1; then
+        destination_id="$(xcrun simctl list devices available 2>/dev/null \
+            | awk '/^[[:space:]]*(iPhone|iPad)/ {
+                if (match($0, /[0-9A-Fa-f-]{8,}(-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}/)) {
+                    print substr($0, RSTART, RLENGTH);
+                    exit
+                }
+            }'
+        )"
+        if [ -n "${destination_id:-}" ]; then
+            echo "id=$destination_id"
+            return 0
+        fi
+
+        destination_name="$(xcrun simctl list devices available 2>/dev/null \
+            | awk '/^[[:space:]]*(iPhone|iPad)/ {
+                gsub(/^[[:space:]]*/, "", $0);
+                sub(/ \([0-9A-Fa-f-]+\) \([^)]+\)[[:space:]]*$/, "", $0);
+                gsub(/[[:space:]]*$/, "", $0);
+                print;
+                exit;
+            }')"
+        if [ -n "${destination_name:-}" ]; then
+            echo "platform=iOS Simulator,name=$destination_name"
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
 # 도움말
 show_help() {
     echo -e "${BOLD}PhotoCleaner Build Check Script${NC}"
@@ -136,15 +196,25 @@ else
     BUILD_CMD="$BUILD_CMD build"
 fi
 
+BUILD_DESTINATION="generic/platform=iOS Simulator"
+if [ "$RUN_TESTS" = true ]; then
+    if ! RESOLVED_DESTINATION="$(resolve_test_destination)"; then
+        echo -e "${YELLOW}⚠️  No concrete simulator destination found. Falling back to generic placeholder.${NC}"
+    else
+        BUILD_DESTINATION="$RESOLVED_DESTINATION"
+    fi
+fi
+
 BUILD_CMD="$BUILD_CMD \
     -project \"$PROJECT_PATH\" \
     -scheme \"$SCHEME\" \
     -configuration \"$CONFIGURATION\" \
     -derivedDataPath \"$DERIVED_DATA\" \
-    -destination 'generic/platform=iOS Simulator'"
+    -destination \"$BUILD_DESTINATION\""
 
 # 빌드 실행
 echo -e "${YELLOW}🔨 Building...${NC}"
+echo -e "${CYAN}Destination:${NC} $BUILD_DESTINATION"
 echo ""
 
 BUILD_START=$(date +%s)
@@ -172,11 +242,13 @@ echo ""
 
 # 경고 및 오류 카운트
 if [ -f "$LOG_FILE" ]; then
-    WARNING_COUNT=$(grep -c "warning:" "$LOG_FILE" 2>/dev/null | head -1 || echo "0")
-    ERROR_COUNT=$(grep -c "error:" "$LOG_FILE" 2>/dev/null | head -1 || echo "0")
-    # Ensure counts are integers
-    WARNING_COUNT=${WARNING_COUNT:-0}
-    ERROR_COUNT=${ERROR_COUNT:-0}
+    WARNING_COUNT="$(grep -c "warning:" "$LOG_FILE" 2>/dev/null || true)"
+    ERROR_COUNT="$(grep -c "error:" "$LOG_FILE" 2>/dev/null || true)"
+
+    WARNING_COUNT="$(printf '%s' "$WARNING_COUNT" | tr -cd '0-9')"
+    ERROR_COUNT="$(printf '%s' "$ERROR_COUNT" | tr -cd '0-9')"
+    [ -z "$WARNING_COUNT" ] && WARNING_COUNT="0"
+    [ -z "$ERROR_COUNT" ] && ERROR_COUNT="0"
 
     echo -e "${CYAN}⏱  Build Time:${NC}  ${BUILD_DURATION}s"
 

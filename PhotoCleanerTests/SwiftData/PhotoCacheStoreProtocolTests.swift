@@ -8,10 +8,10 @@ import Foundation
 @testable import PhotoCleaner
 
 @Suite("PhotoCacheStoreProtocol Contract")
-@MainActor
 struct PhotoCacheStoreProtocolTests {
     
     @Test("PhotoCacheStore가 저장소 계약을 준수한다")
+    @MainActor
     func photoCacheStoreConformsToProtocol() async throws {
         let store = try PhotoCacheStore.makeInMemory()
         let cacheStore: PhotoCacheStoreProtocol = store
@@ -30,6 +30,7 @@ struct PhotoCacheStoreProtocolTests {
     }
     
     @Test("계약 더블의 핵심 CRUD 시나리오가 동작한다")
+    @MainActor
     func contractDoubleSupportsBasicLifecycle() async {
         let store = InMemoryPhotoCacheStoreContractDouble()
         
@@ -70,7 +71,7 @@ struct PhotoCacheStoreProtocolTests {
     }
 }
 
-actor InMemoryPhotoCacheStoreContractDouble: PhotoCacheStoreProtocol {
+final class InMemoryPhotoCacheStoreContractDouble: PhotoCacheStoreProtocol, @unchecked Sendable {
     private var assets: [String: CachedAssetDTO] = [:]
     private var token: Data?
     
