@@ -8,7 +8,8 @@ import Photos
 
 struct AllPhotosView: View {
     @Environment(\.photoAssetService) private var photoAssetService
-    private let cacheStore: PhotoCacheStoreProtocol?
+    private let loadKeywordSummaries: (Int) async -> [KeywordSummaryDTO]
+    private let filterAssets: @Sendable ([PHAsset], String?) async -> [PHAsset]
     private let keywordLocalizationService: KeywordLocalizationService
     @State private var assets: [PHAsset] = []
     @State private var allAssets: [PHAsset] = []
@@ -23,11 +24,13 @@ struct AllPhotosView: View {
     @State private var selectedKeywordFilter: String?
 
     init(
-        cacheStore: PhotoCacheStoreProtocol? = nil,
+        loadKeywordSummaries: @escaping (Int) async -> [KeywordSummaryDTO] = { _ in [] },
+        filterAssets: @escaping @Sendable ([PHAsset], String?) async -> [PHAsset] = { assets, _ in assets },
         initialKeywordFilter: String? = nil,
         keywordLocalizationService: KeywordLocalizationService = KeywordLocalizationService()
     ) {
-        self.cacheStore = cacheStore
+        self.loadKeywordSummaries = loadKeywordSummaries
+        self.filterAssets = filterAssets
         self.keywordLocalizationService = keywordLocalizationService
         _selectedKeywordFilter = State(initialValue: initialKeywordFilter)
     }
@@ -328,48 +331,10 @@ struct AllPhotosView: View {
         let sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
         let loadedAssets = photoAssetService.fetchAllPhotoAssets(sortedBy: sortDescriptors)
         allAssets = loadedAssets
-        assets = await filteredAssets(from: loadedAssets)
-
-        if let cacheStore {
-            keywordSummaries = await cacheStore.fetchKeywordSummary(limit: 24)
-        } else {
-            keywordSummaries = []
-        }
+        assets = await filterAssets(loadedAssets, selectedKeywordFilter)
+        keywordSummaries = await loadKeywordSummaries(24)
 
         isLoading = false
-    }
-
-    private func filteredAssets(from allAssets: [PHAsset]) async -> [PHAsset] {
-        guard
-            let filter = selectedKeywordFilter,
-            let cacheStore
-        else {
-            return allAssets
-        }
-
-        let matchingIdentifiers = await matchingAssetIdentifiers(
-            forKeyword: filter,
-            from: allAssets,
-            cacheStore: cacheStore
-        )
-        return allAssets.filter { matchingIdentifiers.contains($0.localIdentifier) }
-    }
-
-    private func matchingAssetIdentifiers(
-        forKeyword keyword: String,
-        from assets: [PHAsset],
-        cacheStore: PhotoCacheStoreProtocol
-    ) async -> Set<String> {
-        var identifiers = Set<String>()
-
-        for asset in assets {
-            let keywords = await cacheStore.fetchKeywords(for: asset.localIdentifier)
-            if keywords.contains(where: { $0.keyword == keyword }) {
-                identifiers.insert(asset.localIdentifier)
-            }
-        }
-
-        return identifiers
     }
 
     private func deleteSelectedPhotos() {

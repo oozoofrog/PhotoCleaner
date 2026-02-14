@@ -143,11 +143,13 @@ actor PhotoScanService {
                 continuation.yield(.progress(ScanProgress(phase: .preparing, current: 0, total: 0)))
 
                 let sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-                let assets = await self.photoAssetService.fetchAllPhotoAssets(sortedBy: sortDescriptors)
+                let assets = await MainActor.run {
+                    self.photoAssetService.fetchAllPhotoAssets(sortedBy: sortDescriptors)
+                }
                 let total = assets.count
                 var issues: [PhotoIssue] = []
                 var summaryDict: [IssueType: Int] = [:]
-                let threshold = await self.largeFileThreshold
+                let threshold = largeFileThreshold
 
                 // 메타데이터 스캔 (이슈 감지)
                 for (index, asset) in assets.enumerated() {
@@ -155,23 +157,23 @@ actor PhotoScanService {
                         for: asset,
                         enabled: keywordAnalysisEnabled,
                         minimumConfidence: keywordConfidenceThreshold,
-                        languageCode: Locale.current.languageCode ?? "en"
+                        languageCode: Locale.current.language.languageCode?.identifier ?? "en"
                     )
 
                     // 취소 확인
-                    if Task.isCancelled {
-                        let partialResult = await self.createPartialResult(
-                            totalPhotos: total,
-                            issues: issues,
-                            duplicateGroups: []
-                        )
+                if Task.isCancelled {
+                    let partialResult = self.createPartialResult(
+                        totalPhotos: total,
+                        issues: issues,
+                        duplicateGroups: []
+                    )
                         continuation.yield(.cancelled(partialResult: partialResult))
                         continuation.finish()
                         return
                     }
 
                     // 진행률 업데이트
-                    if await self.shouldUpdateProgress(index: index) {
+                    if self.shouldUpdateProgress(index: index) {
                         let progress = ScanProgress(phase: .scanning, current: index + 1, total: total)
                         continuation.yield(.progress(progress))
                     }
@@ -196,7 +198,7 @@ actor PhotoScanService {
 
                 // 취소 확인
                 if Task.isCancelled {
-                    let partialResult = await self.createPartialResult(
+                    let partialResult = self.createPartialResult(
                         totalPhotos: total,
                         issues: issues + duplicateResult.issues,
                         duplicateGroups: duplicateResult.groups
@@ -221,12 +223,12 @@ actor PhotoScanService {
                     )
 
                     // 취소 확인
-                    if Task.isCancelled {
-                        let partialResult = await self.createPartialResult(
-                            totalPhotos: total,
-                            issues: issues + similarResult.issues,
-                            duplicateGroups: allDuplicateGroups + similarResult.groups
-                        )
+                if Task.isCancelled {
+                    let partialResult = self.createPartialResult(
+                        totalPhotos: total,
+                        issues: issues + similarResult.issues,
+                        duplicateGroups: allDuplicateGroups + similarResult.groups
+                    )
                         continuation.yield(.cancelled(partialResult: partialResult))
                         continuation.finish()
                         return
@@ -246,7 +248,7 @@ actor PhotoScanService {
                     scannedAt: Date()
                 )
 
-                await self.setCachedResult(result)
+                setCachedResult(result)
 
                 continuation.yield(.progress(ScanProgress(phase: .completed, current: total, total: total)))
                 continuation.yield(.completed(result))
@@ -606,7 +608,7 @@ actor PhotoScanService {
                 for: asset,
                 enabled: keywordAnalysisEnabled,
                 minimumConfidence: keywordConfidenceThreshold,
-                languageCode: Locale.current.languageCode ?? "en"
+                languageCode: Locale.current.language.languageCode?.identifier ?? "en"
             )
 
             if shouldUpdateProgress(index: index) {
@@ -682,7 +684,7 @@ actor PhotoScanService {
                 for: asset,
                 enabled: keywordAnalysisEnabled,
                 minimumConfidence: keywordConfidenceThreshold,
-                languageCode: Locale.current.languageCode ?? "en"
+                languageCode: Locale.current.language.languageCode?.identifier ?? "en"
             )
 
             if shouldUpdateProgress(index: index) {

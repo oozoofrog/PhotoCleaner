@@ -56,7 +56,12 @@ struct DashboardView: View {
             }
             .navigationDestination(isPresented: $showAllPhotos) {
                 AllPhotosView(
-                    cacheStore: viewModel.keywordCacheStore(),
+                    loadKeywordSummaries: { limit in
+                        await viewModel.keywordSummaries(limit: limit)
+                    },
+                    filterAssets: { assets, keyword in
+                        await viewModel.filteredPhotoAssets(assets, keyword: keyword)
+                    },
                     initialKeywordFilter: selectedKeywordForFilter
                 )
             }

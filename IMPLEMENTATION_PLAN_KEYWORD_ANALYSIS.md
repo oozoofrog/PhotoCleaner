@@ -175,8 +175,8 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 ### 목표
 현재 SwiftData가 담당하던 저장소 기능을 GRDB 구현체로 대체 가능하게 만든다.
 
-### 진행 현황 (2026-02-15)
-- 상태: 진행 중
+### 진행 현황 (2026-02-16)
+- 상태: 완료
 - 업데이트: `PhotoCacheStoreProtocol`에 키워드 저장/조회 계약(`AssetKeywordDTO`, `KeywordSummaryDTO`) 추가 완료.
 - 업데이트: `GRDBPhotoStore` 및 `PhotoCacheStore(SwiftData)`에 키워드 저장/조회/요약 집계 구현 완료.
 - 업데이트: 계약 테스트/Mock를 신규 계약에 맞게 보강 완료.
@@ -380,6 +380,8 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 - `PhotoCleaner/Sources/Views/Dashboard/DashboardView.swift`
 - `PhotoCleaner/Sources/ViewModels/DashboardViewModel.swift`
 - `PhotoCleaner/Sources/Views/Components/Cards/KeywordSummaryCard.swift` (신규)
+- `PhotoCleaner/Sources/Services/PhotoScanService.swift`
+- `PhotoCleaner/Sources/Services/PhotoKeywordAnalyzer.swift`
 
 ### 작업
 1. `AllPhotosView`에 키워드 칩 필터 영역을 추가한다.
@@ -391,7 +393,7 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 4. 카드 탭 시 키워드 필터 화면으로 이동시킨다.
   - 진행 상태: 완료
 5. (OOP) 필터링 계산은 ViewModel/도메인으로 두고 View는 렌더링 책임만 갖게 한다.
-  - 진행 상태: 진행 중
+  - 진행 상태: 완료
 
 ### 검증
 - 수동 QA: 필터 선택/해제, 빈 상태, 스캔 중/완료 후 갱신
@@ -399,12 +401,12 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
  - 최신 자동 검증: `./scripts/build-check.sh test` -> `passed_tests: 152`, `errors: 0`, `warnings: 0` (2026-02-16)
 
 ### 원칙 준수 게이트 (Phase 6 종료 조건)
-- [ ] TDD: 필터/카드 동작 테스트(또는 ViewModel 테스트)를 먼저 작성/통과했다.
-- [ ] DDD: View는 렌더링만 담당하고 도메인 규칙은 ViewModel/Service가 담당한다.
-- [ ] OOP: UI 컴포넌트(`KeywordSummaryCard`)는 표시 책임만 가진다.
-- [ ] Factory: 화면 조립 시 생성 규칙이 복잡하면 ViewModel Factory를 사용한다.
-- [ ] Pure DI: UI 계층은 주입된 의존성만 사용하고 전역 조회를 하지 않는다.
-- [ ] Tidy First: UI 구조 정리(레이아웃/리네이밍)와 동작 추가를 분리했다.
+- [x] TDD: 필터/카드 동작 테스트(또는 ViewModel 테스트)를 먼저 작성/통과했다.
+- [x] DDD: View는 렌더링만 담당하고 도메인 규칙은 ViewModel/Service가 담당한다.
+- [x] OOP: UI 컴포넌트(`KeywordSummaryCard`)는 표시 책임만 가진다.
+- [x] Factory: 화면 조립 시 생성 규칙이 복잡하면 ViewModel Factory를 사용한다.
+- [x] Pure DI: UI 계층은 주입된 의존성만 사용하고 전역 조회를 하지 않는다.
+- [x] Tidy First: UI 구조 정리(레이아웃/리네이밍)와 동작 추가를 분리했다.
 
 ---
 

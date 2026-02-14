@@ -19,7 +19,7 @@ struct PhotoKeywordAnalyzer: Sendable {
     func extractKeywords(
         from asset: PHAsset,
         using photoAssetService: PhotoAssetService,
-        languageCode: String = Locale.current.languageCode ?? "en",
+        languageCode: String = Locale.current.language.languageCode?.identifier ?? "en",
         minimumConfidence: Double = defaultConfidenceThreshold,
         maxKeywordCount: Int = defaultMaxKeywordCount,
         createdAt: Date = Date()

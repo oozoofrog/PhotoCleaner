@@ -202,7 +202,7 @@ final class DashboardViewModel {
         scanStreamTask = Task { [weak self] in
             for await update in stream {
                 guard let self = self else { break }
-                await self.handleScanUpdate(update)
+                self.handleScanUpdate(update)
             }
         }
     }
@@ -383,8 +383,24 @@ final class DashboardViewModel {
         return await cacheStore.fetchKeywordSummary(limit: summaryLimit)
     }
 
-    func keywordCacheStore() -> PhotoCacheStoreProtocol? {
-        cacheStore
+    func filteredPhotoAssets(_ allAssets: [PHAsset], keyword: String?) async -> [PHAsset] {
+        guard
+            let filter = keyword,
+            let cacheStore = cacheStore
+        else {
+            return allAssets
+        }
+
+        var matchingIdentifiers = Set<String>()
+
+        for asset in allAssets {
+            let keywords = await cacheStore.fetchKeywords(for: asset.localIdentifier)
+            if keywords.contains(where: { $0.keyword == filter }) {
+                matchingIdentifiers.insert(asset.localIdentifier)
+            }
+        }
+
+        return allAssets.filter { matchingIdentifiers.contains($0.localIdentifier) }
     }
 
     func issues(for type: IssueType) -> [PhotoIssue] {
