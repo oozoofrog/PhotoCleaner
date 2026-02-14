@@ -47,11 +47,16 @@
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
+/* Begin PBXBuildFile section */
+		74E3EAEB2F06BF39004601C0 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = 74E3EAF02F06BF39004601C0 /* GRDB */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFrameworksBuildPhase section */
 		74E3EA702F06BF36004601C0 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				74E3EAEB2F06BF39004601C0 /* GRDB in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = PhotoCleaner;
 			packageProductDependencies = (
+				74E3EAF02F06BF39004601C0 /* GRDB */,
 			);
 			productName = PhotoCleaner;
 			productReference = 74E3EA732F06BF36004601C0 /* PhotoCleaner.app */;
@@ -197,6 +203,9 @@
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 74E3EA742F06BF36004601C0 /* Products */;
+			packageReferences = (
+				74E3EAF12F06BF39004601C0 /* XCRemoteSwiftPackageReference "GRDB.swift" */,
+			);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -590,6 +599,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-	};
+
+/* Begin XCRemoteSwiftPackageReference section */
+		74E3EAF12F06BF39004601C0 /* XCRemoteSwiftPackageReference "GRDB.swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/groue/GRDB.swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 6.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageProductDependency section */
+		74E3EAF02F06BF39004601C0 /* GRDB */ = {
+			isa = XCRemoteSwiftPackageProductDependency;
+			package = 74E3EAF12F06BF39004601C0 /* XCRemoteSwiftPackageReference "GRDB.swift" */;
+			productName = GRDB;
+		};
+/* End XCRemoteSwiftPackageProductDependency section */
+		};
 	rootObject = 74E3EA6B2F06BF36004601C0 /* Project object */;
 }
