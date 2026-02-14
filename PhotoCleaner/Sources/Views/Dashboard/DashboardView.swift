@@ -12,6 +12,9 @@ struct DashboardView: View {
     @State private var selectedIssueType: IssueType?
     @State private var showSettings = false
     @State private var showAllPhotos = false
+    @State private var selectedKeywordForFilter: String?
+    @State private var keywordSummaries: [KeywordSummaryDTO] = []
+    private let keywordLocalizationService = KeywordLocalizationService()
 
     var body: some View {
         NavigationStack {
@@ -52,7 +55,10 @@ struct DashboardView: View {
                 )
             }
             .navigationDestination(isPresented: $showAllPhotos) {
-                AllPhotosView()
+                AllPhotosView(
+                    cacheStore: viewModel.keywordCacheStore(),
+                    initialKeywordFilter: selectedKeywordForFilter
+                )
             }
         }
     }
@@ -110,10 +116,25 @@ struct DashboardView: View {
                     onViewAllPhotos: {
                         showAllPhotos = true
                     },
-                    onScanDuplicates: {
-                        Task { await viewModel.scanDuplicatesOnly() }
-                    }
+                onScanDuplicates: {
+                    Task { await viewModel.scanDuplicatesOnly() }
+                }
                 )
+
+                if !keywordSummaries.isEmpty {
+                    KeywordSummaryCard(
+                        items: localizedKeywordSummaryItems(),
+                        selectedKeyword: selectedKeywordForFilter,
+                        isUpdating: viewModel.isScanning
+                    ) {
+                        selectedKeywordForFilter = nil
+                    } onSelect: { keyword in
+                        selectedKeywordForFilter = keyword
+                        if keyword != nil {
+                            showAllPhotos = true
+                        }
+                    }
+                }
 
                 // 스캔 중에도 이슈 카드 표시 (hasScanned 또는 isScanning)
                 if viewModel.hasScanned || viewModel.isScanning {
@@ -130,6 +151,14 @@ struct DashboardView: View {
         .premiumBackground()
         .refreshable {
             await viewModel.startScan()
+        }
+        .task(id: viewModel.lastScanDate) {
+            let summaries = await viewModel.keywordSummaries(limit: 12)
+            keywordSummaries = summaries
+            if let selectedKeywordForFilter,
+               !summaries.contains(where: { $0.keyword == selectedKeywordForFilter }) {
+                self.selectedKeywordForFilter = nil
+            }
         }
     }
 
@@ -188,6 +217,22 @@ struct DashboardView: View {
             }
             .disabled(viewModel.isScanning)
         }
+    }
+
+    private func localizedKeywordSummaryItems() -> [KeywordSummaryCardItem] {
+        keywordSummaries
+            .map { summary in
+                KeywordSummaryCardItem(
+                    id: "\(summary.keyword)|\(summary.languageCode)",
+                    keyword: summary.keyword,
+                    displayText: keywordLocalizationService.localizedDisplayKeyword(
+                        from: summary.keyword,
+                        sourceLanguageCode: summary.languageCode,
+                        locale: .current
+                    ) + " (\(summary.assetCount))",
+                    count: summary.assetCount
+                )
+            }
     }
 }
 

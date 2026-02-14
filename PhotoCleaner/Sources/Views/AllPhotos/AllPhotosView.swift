@@ -8,7 +8,11 @@ import Photos
 
 struct AllPhotosView: View {
     @Environment(\.photoAssetService) private var photoAssetService
+    private let cacheStore: PhotoCacheStoreProtocol?
+    private let keywordLocalizationService: KeywordLocalizationService
     @State private var assets: [PHAsset] = []
+    @State private var allAssets: [PHAsset] = []
+    @State private var keywordSummaries: [KeywordSummaryDTO] = []
     @State private var selectedAssets: Set<String> = []
     @State private var isSelectionMode = false
     @State private var isLoading = true
@@ -16,6 +20,17 @@ struct AllPhotosView: View {
     @State private var deleteError: String?
     @State private var isDeleting = false
     @State private var selectedAssetIdentifier: String?
+    @State private var selectedKeywordFilter: String?
+
+    init(
+        cacheStore: PhotoCacheStoreProtocol? = nil,
+        initialKeywordFilter: String? = nil,
+        keywordLocalizationService: KeywordLocalizationService = KeywordLocalizationService()
+    ) {
+        self.cacheStore = cacheStore
+        self.keywordLocalizationService = keywordLocalizationService
+        _selectedKeywordFilter = State(initialValue: initialKeywordFilter)
+    }
 
     var body: some View {
         Group {
@@ -76,7 +91,7 @@ struct AllPhotosView: View {
                 PhotoDetailView(asset: asset)
             }
         }
-        .task {
+        .task(id: selectedKeywordFilter) {
             await loadAllPhotos()
         }
     }
@@ -103,9 +118,16 @@ struct AllPhotosView: View {
                 .font(Typography.title)
                 .foregroundStyle(AppColor.textPrimary)
 
-            Text("사진첩에 사진이 없습니다.")
-                .font(Typography.body)
-                .foregroundStyle(AppColor.textSecondary)
+            if isFilterActive {
+                Text("\"\(currentKeywordLabel)\" 키워드 결과가 없습니다.")
+                    .font(Typography.body)
+                    .foregroundStyle(AppColor.textSecondary)
+                    .multilineTextAlignment(.center)
+            } else {
+                Text("사진첩에 사진이 없습니다.")
+                    .font(Typography.body)
+                    .foregroundStyle(AppColor.textSecondary)
+            }
         }
         .padding(Spacing.xl)
     }
@@ -113,6 +135,7 @@ struct AllPhotosView: View {
     private var photoGridContent: some View {
         ScrollView {
             VStack(spacing: Spacing.sm) {
+                keywordFilterBar
                 photoCountHeader
 
                 JustifiedPhotoGrid(
@@ -142,12 +165,110 @@ struct AllPhotosView: View {
 
     private var photoCountHeader: some View {
         HStack {
-            Text("\(assets.count)장의 사진")
+            let suffix = isFilterActive ? " (필터 적용)" : ""
+            Text("\(assets.count)장의 사진\(suffix)")
                 .font(Typography.subheadline)
                 .foregroundStyle(AppColor.textSecondary)
             Spacer()
         }
         .padding(.horizontal, Spacing.md)
+    }
+
+    private var keywordFilterBar: some View {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            if !keywordSummaryChips.isEmpty {
+                Text("키워드")
+                    .font(Typography.caption)
+                    .foregroundStyle(AppColor.textSecondary)
+                    .padding(.horizontal, Spacing.md)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: Spacing.xs) {
+                        Button("전체") {
+                            selectedKeywordFilter = nil
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, Spacing.md)
+                        .padding(.vertical, Spacing.sm)
+                        .background(
+                            Group {
+                                if selectedKeywordFilter == nil {
+                                    AppColor.premiumGradient
+                                } else {
+                                    AppColor.backgroundTertiary
+                                }
+                            }
+                        )
+                        .foregroundStyle(selectedKeywordFilter == nil ? AppColor.primaryText : AppColor.textPrimary)
+                        .clipShape(Capsule())
+                        .overlay(
+                                Capsule().stroke(AppColor.separator, lineWidth: selectedKeywordFilter == nil ? 0 : 1)
+                        )
+
+                        ForEach(keywordSummaryChips) { summary in
+                            let isSelected = summary.keyword == selectedKeywordFilter
+
+                            Button(summary.displayText) {
+                                selectedKeywordFilter = isSelected ? nil : summary.keyword
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, Spacing.md)
+                            .padding(.vertical, Spacing.sm)
+                            .background(
+                                Group {
+                                    if isSelected {
+                                        AppColor.premiumGradient
+                                    } else {
+                                        AppColor.backgroundTertiary
+                                    }
+                                }
+                            )
+                            .foregroundStyle(isSelected ? AppColor.primaryText : AppColor.textPrimary)
+                            .clipShape(Capsule())
+                            .overlay(
+                                Capsule()
+                                    .stroke(isSelected ? AppColor.primary : AppColor.separator, lineWidth: 1)
+                            )
+                        }
+                    }
+                    .padding(.horizontal, Spacing.md)
+                }
+            }
+        }
+        .padding(.top, Spacing.sm)
+    }
+
+    private var keywordSummaryChips: [KeywordSummaryChip] {
+        keywordSummaries
+            .prefix(12)
+            .map { summary in
+                KeywordSummaryChip(
+                    id: "\(summary.keyword)|\(summary.languageCode)",
+                    keyword: summary.keyword,
+                    languageCode: summary.languageCode,
+                    displayText: keywordLocalizationService.localizedDisplayKeyword(
+                        from: summary.keyword,
+                        sourceLanguageCode: summary.languageCode,
+                        locale: .current
+                    ) + " (\(summary.assetCount))"
+                )
+            }
+    }
+
+    private var isFilterActive: Bool {
+        selectedKeywordFilter != nil
+    }
+
+    private var currentKeywordLabel: String {
+        guard let selectedKeywordFilter else { return "" }
+        if let summary = keywordSummaries.first(where: { $0.keyword == selectedKeywordFilter }) {
+            return keywordLocalizationService.localizedDisplayKeyword(
+                from: summary.keyword,
+                sourceLanguageCode: summary.languageCode,
+                locale: .current
+            )
+        }
+        return selectedKeywordFilter
     }
 
     private var selectionToolbar: some View {
@@ -187,6 +308,13 @@ struct AllPhotosView: View {
         return CGFloat(asset.pixelWidth) / CGFloat(asset.pixelHeight)
     }
 
+    private struct KeywordSummaryChip: Identifiable, Hashable {
+        let id: String
+        let keyword: String
+        let languageCode: String
+        let displayText: String
+    }
+
     private func toggleSelection(_ id: String) {
         if selectedAssets.contains(id) {
             selectedAssets.remove(id)
@@ -196,10 +324,52 @@ struct AllPhotosView: View {
     }
 
     private func loadAllPhotos() async {
+        isLoading = true
         let sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
         let loadedAssets = photoAssetService.fetchAllPhotoAssets(sortedBy: sortDescriptors)
-        assets = loadedAssets
+        allAssets = loadedAssets
+        assets = await filteredAssets(from: loadedAssets)
+
+        if let cacheStore {
+            keywordSummaries = await cacheStore.fetchKeywordSummary(limit: 24)
+        } else {
+            keywordSummaries = []
+        }
+
         isLoading = false
+    }
+
+    private func filteredAssets(from allAssets: [PHAsset]) async -> [PHAsset] {
+        guard
+            let filter = selectedKeywordFilter,
+            let cacheStore
+        else {
+            return allAssets
+        }
+
+        let matchingIdentifiers = await matchingAssetIdentifiers(
+            forKeyword: filter,
+            from: allAssets,
+            cacheStore: cacheStore
+        )
+        return allAssets.filter { matchingIdentifiers.contains($0.localIdentifier) }
+    }
+
+    private func matchingAssetIdentifiers(
+        forKeyword keyword: String,
+        from assets: [PHAsset],
+        cacheStore: PhotoCacheStoreProtocol
+    ) async -> Set<String> {
+        var identifiers = Set<String>()
+
+        for asset in assets {
+            let keywords = await cacheStore.fetchKeywords(for: asset.localIdentifier)
+            if keywords.contains(where: { $0.keyword == keyword }) {
+                identifiers.insert(asset.localIdentifier)
+            }
+        }
+
+        return identifiers
     }
 
     private func deleteSelectedPhotos() {
@@ -219,9 +389,11 @@ struct AllPhotosView: View {
 
         do {
             try await photoAssetService.deleteAssets(withIdentifiers: identifiersToDelete)
+            allAssets.removeAll { selectedAssets.contains($0.localIdentifier) }
             assets.removeAll { selectedAssets.contains($0.localIdentifier) }
             selectedAssets.removeAll()
             isSelectionMode = false
+            await loadAllPhotos()
         } catch {
             deleteError = error.localizedDescription
         }

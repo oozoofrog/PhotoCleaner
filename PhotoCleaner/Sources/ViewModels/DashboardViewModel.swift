@@ -377,6 +377,16 @@ final class DashboardViewModel {
         scanResult?.summary(for: type)
     }
 
+    func keywordSummaries(limit: Int = 10) async -> [KeywordSummaryDTO] {
+        guard let cacheStore else { return [] }
+        let summaryLimit = max(1, limit)
+        return await cacheStore.fetchKeywordSummary(limit: summaryLimit)
+    }
+
+    func keywordCacheStore() -> PhotoCacheStoreProtocol? {
+        cacheStore
+    }
+
     func issues(for type: IssueType) -> [PhotoIssue] {
         scanResult?.issues(for: type) ?? []
     }

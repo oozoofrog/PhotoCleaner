@@ -332,6 +332,7 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 - 상태: 진행 중
 - 업데이트: `KeywordLocalizationService` 신규 추가.
 - 업데이트: 로케일 매핑/미매핑 fallback 정책 테스트(`KeywordLocalizationServiceTests.swift`) 추가.
+- 업데이트: 키워드 표시 텍스트와 내부 키워드 분리를 `AllPhotosView`/`DashboardView`에서 실제 렌더링 경로로 반영.
 
 ### 변경 대상
 - `PhotoCleaner/Sources/Services/KeywordLocalizationService.swift` (신규)
@@ -340,17 +341,18 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 
 ### 작업
 1. 로케일 판단 규칙을 정의한다 (`Locale.current` 기반).
- - 진행 상태: 완료
+  - 진행 상태: 완료
 2. 1차 한국어 매핑 테이블(핵심 키워드) + 미매핑 fallback(원문)을 적용한다.
- - 진행 상태: 완료
+  - 진행 상태: 완료
 3. 키워드 표시 텍스트와 내부 저장 키워드(원문)를 분리한다.
- - 진행 상태: 진행 중
+  - 진행 상태: 완료 (내부 키워드 보존 + 표시 텍스트 번역 분리)
 4. (TDD) 로케일별 변환 규칙(ko/en/fallback)을 케이스 기반 테스트로 선행한다.
- - 진행 상태: 완료 (`KeywordLocalizationServiceTests.swift`)
+  - 진행 상태: 완료 (`KeywordLocalizationServiceTests.swift`)
 
 ### 검증
 - 로케일별 단위 테스트(ko, en) + 미매핑 fallback 테스트
-- 테스트 실행: `./scripts/build-check.sh test` -> `passed_tests: 151`, `errors: 0`, `warnings: 0` (2026-02-15)
+- 테스트 실행: `./scripts/build-check.sh test` -> `passed_tests: 152`, `errors: 0`, `warnings: 0` (2026-02-16)
+- 최신 검증: `./scripts/build-check.sh test` -> `passed_tests: 152`, `errors: 0`, `warnings: 0` (2026-02-16)
 
 ### 원칙 준수 게이트 (Phase 5 종료 조건)
 - [x] TDD: 로케일 변환 규칙 테스트를 먼저 작성하고 구현했다.
@@ -368,8 +370,10 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 사용자 노출 요구사항을 충족하는 키워드 UI를 완성한다.
 
 ### 진행 현황 (2026-02-15)
-- 상태: 시작 전
-- 업데이트: 없음
+- 상태: 진행 중
+- 업데이트: `AllPhotosView` 키워드 칩 필터, `DashboardView` 키워드 요약 카드, `KeywordSummaryCard` 신규 컴포넌트, 필터/네비게이션 연결을 완료.
+- 업데이트: `AppColor` 토큰 미정합으로 인한 빌드 오류를 정리하고 스타일 토큰(`lineSecondary`, `textOnAccent`) 참조를 정정.
+- 업데이트: `./scripts/build-check.sh test` 최신 실행 결과 통과(`errors: 0`, `warnings: 0`, `passed_tests: 152`) (2026-02-16).
 
 ### 변경 대상
 - `PhotoCleaner/Sources/Views/AllPhotos/AllPhotosView.swift`
@@ -379,14 +383,20 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 
 ### 작업
 1. `AllPhotosView`에 키워드 칩 필터 영역을 추가한다.
+  - 진행 상태: 완료
 2. 선택 키워드 기준으로 표시 사진을 필터링한다.
+  - 진행 상태: 완료
 3. `DashboardView`에 키워드 요약 카드(분석 사진 수 + 상위 키워드 N개)를 추가한다.
+  - 진행 상태: 완료
 4. 카드 탭 시 키워드 필터 화면으로 이동시킨다.
+  - 진행 상태: 완료
 5. (OOP) 필터링 계산은 ViewModel/도메인으로 두고 View는 렌더링 책임만 갖게 한다.
+  - 진행 상태: 진행 중
 
 ### 검증
 - 수동 QA: 필터 선택/해제, 빈 상태, 스캔 중/완료 후 갱신
 - 프리뷰/기본 화면 빌드 확인
+ - 최신 자동 검증: `./scripts/build-check.sh test` -> `passed_tests: 152`, `errors: 0`, `warnings: 0` (2026-02-16)
 
 ### 원칙 준수 게이트 (Phase 6 종료 조건)
 - [ ] TDD: 필터/카드 동작 테스트(또는 ViewModel 테스트)를 먼저 작성/통과했다.
