@@ -329,8 +329,9 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 디바이스 로케일 기반으로 키워드 표시 언어를 자동 결정한다.
 
 ### 진행 현황 (2026-02-15)
-- 상태: 시작 전
-- 업데이트: 없음
+- 상태: 진행 중
+- 업데이트: `KeywordLocalizationService` 신규 추가.
+- 업데이트: 로케일 매핑/미매핑 fallback 정책 테스트(`KeywordLocalizationServiceTests.swift`) 추가.
 
 ### 변경 대상
 - `PhotoCleaner/Sources/Services/KeywordLocalizationService.swift` (신규)
@@ -339,20 +340,24 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 
 ### 작업
 1. 로케일 판단 규칙을 정의한다 (`Locale.current` 기반).
+ - 진행 상태: 완료
 2. 1차 한국어 매핑 테이블(핵심 키워드) + 미매핑 fallback(원문)을 적용한다.
+ - 진행 상태: 완료
 3. 키워드 표시 텍스트와 내부 저장 키워드(원문)를 분리한다.
+ - 진행 상태: 진행 중
 4. (TDD) 로케일별 변환 규칙(ko/en/fallback)을 케이스 기반 테스트로 선행한다.
+ - 진행 상태: 완료 (`KeywordLocalizationServiceTests.swift`)
 
 ### 검증
-- 로케일별 단위 테스트(ko, en)
-- 미매핑 키워드 fallback 테스트
+- 로케일별 단위 테스트(ko, en) + 미매핑 fallback 테스트
+- 테스트 실행: `./scripts/build-check.sh test` -> `passed_tests: 151`, `errors: 0`, `warnings: 0` (2026-02-15)
 
 ### 원칙 준수 게이트 (Phase 5 종료 조건)
-- [ ] TDD: 로케일 변환 규칙 테스트를 먼저 작성하고 구현했다.
-- [ ] DDD: `LocalizedKeyword` 표현 규칙은 localization 도메인으로 한정된다.
-- [ ] OOP: `KeywordLocalizationService`는 표시 변환 책임만 가진다.
-- [ ] Factory: 로케일 전략 생성이 필요하면 전략 Factory를 사용한다. 미적용 시 `N/A` 기록.
-- [ ] Pure DI: 로케일 서비스 주입은 Composition Root/Factory에서 수행한다.
+- [x] TDD: 로케일 변환 규칙 테스트를 먼저 작성하고 구현했다.
+- [x] DDD: `LocalizedKeyword` 표현 규칙은 localization 도메인으로 한정했다.
+- [x] OOP: `KeywordLocalizationService`는 표시 변환 책임만 가진다.
+- [ ] Factory: 로케일 전략이 복잡하지 않아 Factory 미적용 (`N/A: 전략 전환 필요 없음`).
+- [ ] Pure DI: 서비스 주입을 Composition Root에서 분리하지 못해 미구현 (`N/A: 현재 직접 생성 범위`).
 - [ ] Tidy First: 키워드 문자열 정리와 동작 변경을 분리했다.
 
 ---
