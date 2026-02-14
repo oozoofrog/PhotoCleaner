@@ -111,7 +111,10 @@ final class DashboardViewModel {
         cacheStore: PhotoCacheStoreProtocol? = nil
     ) {
         self.permissionService = permissionService
-        self.scanService = PhotoScanService(photoAssetService: photoAssetService)
+        self.scanService = PhotoScanService(
+            photoAssetService: photoAssetService,
+            cacheStore: cacheStore
+        )
         self.cacheStore = cacheStore
         if let cacheStore = cacheStore {
             self.syncService = PhotoLibrarySyncService(
@@ -185,11 +188,15 @@ final class DashboardViewModel {
         // 설정 가져오기
         let duplicateMode = AppSettings.shared.duplicateDetectionMode
         let similarityThreshold = AppSettings.shared.similarityThreshold
+        let keywordAnalysisEnabled = AppSettings.shared.keywordAnalysisEnabled
+        let keywordConfidenceThreshold = AppSettings.shared.keywordConfidenceThreshold
 
         // 스트리밍 스캔 시작
         let stream = await scanService.scanAllStreaming(
             duplicateDetectionMode: duplicateMode,
-            similarityThreshold: similarityThreshold
+            similarityThreshold: similarityThreshold,
+            keywordAnalysisEnabled: keywordAnalysisEnabled,
+            keywordConfidenceThreshold: keywordConfidenceThreshold
         )
 
         scanStreamTask = Task { [weak self] in
@@ -268,11 +275,15 @@ final class DashboardViewModel {
         // 설정 가져오기
         let duplicateMode = AppSettings.shared.duplicateDetectionMode
         let similarityThreshold = AppSettings.shared.similarityThreshold
+        let keywordAnalysisEnabled = AppSettings.shared.keywordAnalysisEnabled
+        let keywordConfidenceThreshold = AppSettings.shared.keywordConfidenceThreshold
 
         do {
             let result = try await scanService.scanAll(
                 duplicateDetectionMode: duplicateMode,
-                similarityThreshold: similarityThreshold
+                similarityThreshold: similarityThreshold,
+                keywordAnalysisEnabled: keywordAnalysisEnabled,
+                keywordConfidenceThreshold: keywordConfidenceThreshold
             ) { @MainActor [weak self] progress in
                 self?.scanProgress = progress
             }
@@ -297,12 +308,16 @@ final class DashboardViewModel {
         // 설정 가져오기
         let duplicateMode = AppSettings.shared.duplicateDetectionMode
         let similarityThreshold = AppSettings.shared.similarityThreshold
+        let keywordAnalysisEnabled = AppSettings.shared.keywordAnalysisEnabled
+        let keywordConfidenceThreshold = AppSettings.shared.keywordConfidenceThreshold
 
         do {
             let result = try await scanService.scan(
                 for: issueTypes,
                 duplicateDetectionMode: duplicateMode,
-                similarityThreshold: similarityThreshold
+                similarityThreshold: similarityThreshold,
+                keywordAnalysisEnabled: keywordAnalysisEnabled,
+                keywordConfidenceThreshold: keywordConfidenceThreshold
             ) { @MainActor [weak self] progress in
                 self?.scanProgress = progress
             }

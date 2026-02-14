@@ -71,6 +71,23 @@ struct SettingsView: View {
                 }
             }
 
+            Toggle("키워드 분석", isOn: $settings.keywordAnalysisEnabled)
+
+            if settings.keywordAnalysisEnabled {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("키워드 신뢰도 임계값: \(Int(settings.keywordConfidenceThreshold * 100))%")
+                        .font(.subheadline)
+                        .foregroundStyle(AppColor.textSecondary)
+
+                    Slider(
+                        value: $settings.keywordConfidenceThreshold,
+                        in: 0...1,
+                        step: 0.05
+                    )
+                    .tint(AppColor.primary)
+                }
+            }
+
             Toggle("자동 검사", isOn: $settings.autoScanEnabled)
         } header: {
             Text("검사 설정")

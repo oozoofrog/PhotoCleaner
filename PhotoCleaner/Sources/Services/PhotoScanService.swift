@@ -102,6 +102,8 @@ actor PhotoScanService {
     // MARK: - Dependencies
 
     private let photoAssetService: any PhotoAssetService
+    private let cacheStore: PhotoCacheStoreProtocol?
+    private let keywordAnalyzer: PhotoKeywordAnalyzer
 
     // MARK: - Properties
 
@@ -109,8 +111,14 @@ actor PhotoScanService {
     private var lastProgressUpdate: Date = .distantPast
     private(set) var largeFileThreshold: Int64 = 10 * 1024 * 1024
 
-    init(photoAssetService: some PhotoAssetService) {
+    init(
+        photoAssetService: some PhotoAssetService,
+        cacheStore: PhotoCacheStoreProtocol? = nil,
+        keywordAnalyzer: PhotoKeywordAnalyzer = PhotoKeywordAnalyzer()
+    ) {
         self.photoAssetService = photoAssetService
+        self.cacheStore = cacheStore
+        self.keywordAnalyzer = keywordAnalyzer
     }
 
     func setLargeFileThreshold(_ threshold: LargeFileSizeOption) {
@@ -123,7 +131,9 @@ actor PhotoScanService {
     /// 스트리밍 스캔 API - 실시간으로 발견된 이슈를 yield
     func scanAllStreaming(
         duplicateDetectionMode: DuplicateDetectionMode = .includeSimilar,
-        similarityThreshold: SimilarityThreshold = .percent95
+        similarityThreshold: SimilarityThreshold = .percent95,
+        keywordAnalysisEnabled: Bool = false,
+        keywordConfidenceThreshold: Double = 0.8
     ) -> AsyncStream<ScanUpdate> {
         AsyncStream { continuation in
             let task = Task {
@@ -132,19 +142,22 @@ actor PhotoScanService {
                 // 준비 단계
                 continuation.yield(.progress(ScanProgress(phase: .preparing, current: 0, total: 0)))
 
-                let fetchOptions = PHFetchOptions()
-                fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-                let allAssets = PHAsset.fetchAssets(with: .image, options: fetchOptions)
-
-                let total = allAssets.count
+                let sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+                let assets = await self.photoAssetService.fetchAllPhotoAssets(sortedBy: sortDescriptors)
+                let total = assets.count
                 var issues: [PhotoIssue] = []
                 var summaryDict: [IssueType: Int] = [:]
-
-                let assets = await self.convertToArray(allAssets)
                 let threshold = await self.largeFileThreshold
 
                 // 메타데이터 스캔 (이슈 감지)
                 for (index, asset) in assets.enumerated() {
+                    await self.analyzeAndPersistKeywordsIfEnabled(
+                        for: asset,
+                        enabled: keywordAnalysisEnabled,
+                        minimumConfidence: keywordConfidenceThreshold,
+                        languageCode: Locale.current.languageCode ?? "en"
+                    )
+
                     // 취소 확인
                     if Task.isCancelled {
                         let partialResult = await self.createPartialResult(
@@ -575,21 +588,27 @@ actor PhotoScanService {
     func scanAll(
         duplicateDetectionMode: DuplicateDetectionMode = .includeSimilar,
         similarityThreshold: SimilarityThreshold = .percent95,
+        keywordAnalysisEnabled: Bool = false,
+        keywordConfidenceThreshold: Double = 0.8,
         progressHandler: @escaping @MainActor @Sendable (ScanProgress) -> Void
     ) async throws -> ScanResult {
         await progressHandler(ScanProgress(phase: .preparing, current: 0, total: 0))
 
-        let fetchOptions = PHFetchOptions()
-        fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-        let allAssets = PHAsset.fetchAssets(with: .image, options: fetchOptions)
-
-        let total = allAssets.count
+        let assets = await photoAssetService.fetchAllPhotoAssets(sortedBy: [
+            NSSortDescriptor(key: "creationDate", ascending: false)
+        ])
+        let total = assets.count
         var issues: [PhotoIssue] = []
-
-        let assets = convertToArray(allAssets)
         let threshold = largeFileThreshold
 
         for (index, asset) in assets.enumerated() {
+            await analyzeAndPersistKeywordsIfEnabled(
+                for: asset,
+                enabled: keywordAnalysisEnabled,
+                minimumConfidence: keywordConfidenceThreshold,
+                languageCode: Locale.current.languageCode ?? "en"
+            )
+
             if shouldUpdateProgress(index: index) {
                 let progress = ScanProgress(phase: .scanning, current: index + 1, total: total)
                 await progressHandler(progress)
@@ -638,30 +657,34 @@ actor PhotoScanService {
         for issueTypes: [IssueType],
         duplicateDetectionMode: DuplicateDetectionMode = .includeSimilar,
         similarityThreshold: SimilarityThreshold = .percent95,
+        keywordAnalysisEnabled: Bool = false,
+        keywordConfidenceThreshold: Double = 0.8,
         progressHandler: @escaping @MainActor @Sendable (ScanProgress) -> Void
     ) async throws -> ScanResult {
         await progressHandler(ScanProgress(phase: .preparing, current: 0, total: 0))
 
-        let fetchOptions = PHFetchOptions()
-        fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        let sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        var assets = await photoAssetService.fetchAllPhotoAssets(sortedBy: sortDescriptors)
 
-        if issueTypes == [.screenshot] {
-            fetchOptions.predicate = NSPredicate(
-                format: "(mediaSubtypes & %d) != 0",
-                PHAssetMediaSubtype.photoScreenshot.rawValue
-            )
-        }
-
-        let allAssets = PHAsset.fetchAssets(with: .image, options: fetchOptions)
-        let total = allAssets.count
         var issues: [PhotoIssue] = []
         var duplicateGroups: [DuplicateGroup] = []
 
-        let assets = convertToArray(allAssets)
+        if issueTypes == [.screenshot] {
+            assets = assets.filter { $0.mediaSubtypes.contains(.photoScreenshot) }
+        }
+
+        let total = assets.count
         let metadataTypes = issueTypes.filter { $0 != .duplicate }
         let threshold = largeFileThreshold
 
         for (index, asset) in assets.enumerated() {
+            await analyzeAndPersistKeywordsIfEnabled(
+                for: asset,
+                enabled: keywordAnalysisEnabled,
+                minimumConfidence: keywordConfidenceThreshold,
+                languageCode: Locale.current.languageCode ?? "en"
+            )
+
             if shouldUpdateProgress(index: index) {
                 let progress = ScanProgress(phase: .scanning, current: index + 1, total: total)
                 await progressHandler(progress)
@@ -726,11 +749,10 @@ actor PhotoScanService {
     ) async throws -> ScanResult {
         await progressHandler(ScanProgress(phase: .preparing, current: 0, total: 0))
 
-        let fetchOptions = PHFetchOptions()
-        fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-
-        let allAssets = PHAsset.fetchAssets(with: .image, options: fetchOptions)
-        let total = allAssets.count
+        let assets = await photoAssetService.fetchAllPhotoAssets(sortedBy: [
+            NSSortDescriptor(key: "creationDate", ascending: false)
+        ])
+        let total = assets.count
 
         guard total > 0 else {
             return ScanResult(
@@ -741,8 +763,6 @@ actor PhotoScanService {
                 scannedAt: Date()
             )
         }
-
-        let assets = convertToArray(allAssets)
 
         await progressHandler(ScanProgress(phase: .scanning, current: 0, total: total, currentIssueType: .duplicate))
 
@@ -830,19 +850,24 @@ actor PhotoScanService {
         return false
     }
 
-    /// PHFetchResult를 배열로 변환 (인덱스 접근으로 최적화)
-    private nonisolated func convertToArray(_ fetchResult: PHFetchResult<PHAsset>) -> [PHAsset] {
-        let count = fetchResult.count
-        guard count > 0 else { return [] }
-
-        var assets = [PHAsset]()
-        assets.reserveCapacity(count)
-
-        for index in 0..<count {
-            assets.append(fetchResult.object(at: index))
+    private func analyzeAndPersistKeywordsIfEnabled(
+        for asset: PHAsset,
+        enabled: Bool,
+        minimumConfidence: Double,
+        languageCode: String
+    ) async {
+        guard enabled,
+              let cacheStore else {
+            return
         }
 
-        return assets
+        let keywords = await keywordAnalyzer.extractKeywords(
+            from: asset,
+            using: photoAssetService,
+            languageCode: languageCode,
+            minimumConfidence: minimumConfidence
+        )
+        await cacheStore.saveKeywords(for: asset.localIdentifier, keywords: keywords)
     }
 
     // MARK: - Issue Detection

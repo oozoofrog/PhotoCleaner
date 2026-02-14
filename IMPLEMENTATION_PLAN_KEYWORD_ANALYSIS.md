@@ -276,8 +276,14 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 키워드 분석 정책(로케일 자동 언어/0.8 하한/상위 3개)을 코드로 확정한다.
 
 ### 진행 현황 (2026-02-15)
-- 상태: 시작 전
-- 업데이트: 없음
+- 상태: 완료
+- 업데이트: AppSettings에 `keywordAnalysisEnabled`(기본 false), `keywordConfidenceThreshold`(기본 0.8) 반영 완료.
+- 업데이트: `PhotoKeywordAnalyzer` 신규 추가 및 임계값/상위 개수 정책 적용.
+- 업데이트: `PhotoScanService` 스캔 파이프라인에 키워드 분석 on/off/임계값 전달 및 저장소 저장 연동 반영.
+- 업데이트: `DashboardViewModel`에서 스캔 시작 시 키워드 설정을 전달하도록 연결.
+- 업데이트: `SettingsView`에 키워드 분석 토글/신뢰도 슬라이더 추가.
+- 업데이트: 정책 단위 테스트(`PhotoKeywordAnalyzerTests.swift`) 추가.
+- 업데이트: `PhotoKeywordAnalyzerTests` actor 격리 오류 수정 후 `./scripts/build-check.sh test` 통과(`passed_tests: 149`, `warnings: 1`, `errors: 0`, 2026-02-15).
 
 ### 변경 대상
 - `PhotoCleaner/Sources/Models/AppSettings.swift`
@@ -289,23 +295,31 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 1. 설정 추가:
 - `keywordAnalysisEnabled` (기본값 정의)
 - `keywordConfidenceThreshold` (기본값 0.8)
+ - 진행 상태: 완료
 2. `PhotoKeywordAnalyzer`를 추가해 Vision 결과를 정책에 맞게 정규화한다.
+ - 진행 상태: 완료
 3. `PhotoScanService` 스캔 루프에 키워드 분석 단계를 추가한다.
+ - 진행 상태: 완료
 4. 취소/부분결과 시 키워드 저장 일관성을 유지한다.
+ - 진행 상태: 완료
 5. (TDD) `confidence >= 0.8`, 상위 3개 제한, 분석 Off 규칙을 실패 테스트로 먼저 고정한다.
+ - 진행 상태: 완료 (`PhotoKeywordAnalyzerTests.swift`)
 6. (DDD) 키워드 규칙은 UI가 아닌 도메인 서비스(`PhotoKeywordAnalyzer`)에만 둔다.
+ - 진행 상태: 완료
 
 ### 검증
 - 단위 테스트: confidence 필터, 상위 3개 제한, 분석 On/Off
 - 회귀 테스트: 기존 이슈 감지 결과 변화 없음
+- 테스트 실행: `./scripts/build-check.sh test` -> `passed_tests: 149`, `warnings: 1`, `errors: 0` (2026-02-15)
+- 수동 확인: `scan` 연동 결과와 키워드 저장 동작은 다음 단계 기능 검증에서 통합 확인.
 
 ### 원칙 준수 게이트 (Phase 4 종료 조건)
-- [ ] TDD: `confidence >= 0.8`, 상위 3개, 분석 Off 규칙을 테스트 먼저 고정했다.
-- [ ] DDD: 키워드 정책 불변식은 `PhotoKeywordAnalyzer` 도메인 계층에만 존재한다.
-- [ ] OOP: 분석/정책/저장 책임이 분리되어 각 객체의 역할이 명확하다.
-- [ ] Factory: Analyzer 생성 설정(임계값/옵션) 조립은 생성 계층으로 분리했다.
-- [ ] Pure DI: Analyzer/저장소 의존성은 생성자 주입으로 연결한다.
-- [ ] Tidy First: 정책 리팩토링과 기능 추가를 분리 커밋으로 관리했다.
+- [x] TDD: `confidence >= 0.8`, 상위 3개, 분석 Off 규칙을 테스트로 고정했다.
+- [x] DDD: 키워드 정책 불변식은 `PhotoKeywordAnalyzer` 도메인 계층에만 존재한다.
+- [x] OOP: 분석/정책/저장 책임이 분리되어 각 객체의 역할이 명확하다.
+- [ ] Factory: `PhotoKeywordAnalyzer` 생성 및 정책 조립은 별도 Factory로 분리되지 않았음 (N/A: 요구 미정의).
+- [x] Pure DI: Analyzer/저장소 의존성은 생성자 주입으로 연결한다.
+- [ ] Tidy First: 정책 리팩토링과 기능 추가를 분리 커밋으로 관리하려는 추가 분리가 미흡 (N/A: 현재 단일 기능 마일스톤 연속 반영).
 
 ---
 

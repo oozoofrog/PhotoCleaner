@@ -85,6 +85,8 @@ final class AppSettings {
         static let autoScanEnabled = "autoScanEnabled"
         static let thumbnailSize = "thumbnailSize"
         static let sortOrder = "sortOrder"
+        static let keywordAnalysisEnabled = "keywordAnalysisEnabled"
+        static let keywordConfidenceThreshold = "keywordConfidenceThreshold"
     }
 
     var largeFileSizeOption: LargeFileSizeOption {
@@ -111,6 +113,14 @@ final class AppSettings {
         didSet { defaults.set(sortOrder.rawValue, forKey: Keys.sortOrder) }
     }
 
+    var keywordAnalysisEnabled: Bool {
+        didSet { defaults.set(keywordAnalysisEnabled, forKey: Keys.keywordAnalysisEnabled) }
+    }
+
+    var keywordConfidenceThreshold: Double {
+        didSet { defaults.set(keywordConfidenceThreshold, forKey: Keys.keywordConfidenceThreshold) }
+    }
+
     private init() {
         let storedLargeFileSize = Int64(defaults.integer(forKey: Keys.largeFileSizeOption))
         self.largeFileSizeOption = LargeFileSizeOption(rawValue: storedLargeFileSize) ?? .mb10
@@ -128,6 +138,13 @@ final class AppSettings {
 
         let storedSortOrder = defaults.string(forKey: Keys.sortOrder)
         self.sortOrder = SortOrder(rawValue: storedSortOrder ?? "") ?? .date
+
+        self.keywordAnalysisEnabled = defaults.bool(forKey: Keys.keywordAnalysisEnabled)
+        self.keywordConfidenceThreshold = defaults.double(forKey: Keys.keywordConfidenceThreshold)
+
+        if self.keywordConfidenceThreshold == 0 {
+            self.keywordConfidenceThreshold = 0.8
+        }
     }
 
     func resetToDefaults() {
@@ -137,5 +154,7 @@ final class AppSettings {
         autoScanEnabled = false
         thumbnailSize = .medium
         sortOrder = .date
+        keywordAnalysisEnabled = false
+        keywordConfidenceThreshold = 0.8
     }
 }
