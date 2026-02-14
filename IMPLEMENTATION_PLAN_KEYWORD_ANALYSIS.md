@@ -9,6 +9,12 @@
 | 대상 브랜치 | `feature/photo-keyword-analysis` |
 | 목표 | 키워드 분석 MVP를 실제 배포 가능한 수준으로 구현 |
 
+### 0.1 진행 상황 업데이트 규칙
+- 작업 진행 중 이 문서를 기준 상태 문서로 유지한다.
+- 코드 변경 직후 해당 Phase의 `작업`, `검증`, `원칙 준수 게이트` 항목에 상태를 즉시 반영한다.
+- 진행상황은 문서 마지막 별도 로그가 아니라 각 작업 내용(Phase 본문)에 기록한다.
+- 테스트/빌드 실패 시 실패 원인과 재현 명령을 해당 Phase `검증` 바로 아래에 남긴다.
+
 ---
 
 ## 1. 개발 방법론 (상단 배치)
@@ -135,6 +141,11 @@
 ### 목표
 GRDB를 도입할 수 있는 최소 기반을 만든다.
 
+### 진행 현황 (2026-02-15)
+- 상태: 완료
+- 업데이트: GRDB 패키지 추가 및 저장소 중립 계약(`PhotoCacheStoreContract`) 분리/적용 완료.
+- 검증: `./scripts/build-check.sh test` 통과 (`passed_tests: 137`, `errors: 0`).
+
 ### 변경 대상
 - `PhotoCleaner.xcodeproj/project.pbxproj`
 - `PhotoCleaner/Sources/SwiftData/PhotoCacheStore.swift` (타입/프로토콜 분리 준비)
@@ -162,6 +173,12 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 
 ### 목표
 현재 SwiftData가 담당하던 저장소 기능을 GRDB 구현체로 대체 가능하게 만든다.
+
+### 진행 현황 (2026-02-15)
+- 상태: 진행 중
+- 업데이트: `DatabaseMigrations`, `DatabaseManager`, `GRDBPhotoStore` 구현 및 컴파일 오류 정리 완료.
+- 남은 작업: 키워드 저장/조회 메서드의 프로토콜 확장과 저장소 단위 테스트 보강.
+- 검증: `./scripts/build-check.sh test` 통과 (`passed_tests: 137`, `errors: 0`).
 
 ### 변경 대상
 - `PhotoCleaner/Sources/Persistence/GRDB/DatabaseManager.swift` (신규)
@@ -203,6 +220,10 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 ### 목표
 앱 실행 시 기본 저장소가 GRDB가 되도록 전환한다.
 
+### 진행 현황 (2026-02-15)
+- 상태: 시작 전
+- 업데이트: 없음
+
 ### 변경 대상
 - `PhotoCleaner/PhotoCleanerApp.swift`
 - `PhotoCleaner/Sources/ViewModels/DashboardViewModel.swift`
@@ -233,6 +254,10 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 
 ### 목표
 키워드 분석 정책(로케일 자동 언어/0.8 하한/상위 3개)을 코드로 확정한다.
+
+### 진행 현황 (2026-02-15)
+- 상태: 시작 전
+- 업데이트: 없음
 
 ### 변경 대상
 - `PhotoCleaner/Sources/Models/AppSettings.swift`
@@ -269,6 +294,10 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 ### 목표
 디바이스 로케일 기반으로 키워드 표시 언어를 자동 결정한다.
 
+### 진행 현황 (2026-02-15)
+- 상태: 시작 전
+- 업데이트: 없음
+
 ### 변경 대상
 - `PhotoCleaner/Sources/Services/KeywordLocalizationService.swift` (신규)
 - `PhotoCleaner/Sources/Views/AllPhotos/AllPhotosView.swift`
@@ -298,6 +327,10 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 
 ### 목표
 사용자 노출 요구사항을 충족하는 키워드 UI를 완성한다.
+
+### 진행 현황 (2026-02-15)
+- 상태: 시작 전
+- 업데이트: 없음
 
 ### 변경 대상
 - `PhotoCleaner/Sources/Views/AllPhotos/AllPhotosView.swift`
@@ -330,6 +363,10 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 
 ### 목표
 SwiftData 의존을 제거하고 GRDB 단일 저장소 상태를 완료한다.
+
+### 진행 현황 (2026-02-15)
+- 상태: 시작 전
+- 업데이트: 없음
 
 ### 변경 대상
 - `PhotoCleaner/Sources/SwiftData/*` (삭제 또는 전환용 최소 코드만 유지)
@@ -438,3 +475,5 @@ SwiftData 의존을 제거하고 GRDB 단일 저장소 상태를 완료한다.
 - Tidy First 도서 페이지: [Tidy First? (Kent Beck, O'Reilly)](https://www.oreilly.com/library/view/tidy-first/9781098151232/)
 - Tidy First 분리 원칙(Separate Tidying): [Chapter 16. Separate Tidying](https://www.oreilly.com/library/view/tidy-first/9781098151232/ch16.html)
 - Tidy First 인터뷰 보강: [SE Radio 615: Kent Beck on Tidy First?](https://se-radio.net/2024/05/se-radio-615-kent-beck-on-tidy-first/)
+
+---
