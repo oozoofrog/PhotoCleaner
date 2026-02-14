@@ -241,14 +241,16 @@ echo -e "${BOLD}${BLUE}━━━━━━━━━━━━━━━━━━━
 echo ""
 
 # 경고 및 오류 카운트
-if [ -f "$LOG_FILE" ]; then
-    WARNING_COUNT="$(grep -c "warning:" "$LOG_FILE" 2>/dev/null || true)"
-    ERROR_COUNT="$(grep -c "error:" "$LOG_FILE" 2>/dev/null || true)"
-
-    WARNING_COUNT="$(printf '%s' "$WARNING_COUNT" | tr -cd '0-9')"
-    ERROR_COUNT="$(printf '%s' "$ERROR_COUNT" | tr -cd '0-9')"
-    [ -z "$WARNING_COUNT" ] && WARNING_COUNT="0"
+if [ -f "$BUILD_RESULT_FILE" ] || [ -f "$LOG_FILE" ]; then
+    if [ -f "$BUILD_RESULT_FILE" ]; then
+        ERROR_COUNT="$(awk '/^  errors:/ {print $2}' "$BUILD_RESULT_FILE" | tr -d '[:space:]')"
+        WARNING_COUNT="$(awk '/^  warnings:/ {print $2}' "$BUILD_RESULT_FILE" | tr -d '[:space:]')"
+    else
+        ERROR_COUNT="$(printf '0')"
+        WARNING_COUNT="$(printf '0')"
+    fi
     [ -z "$ERROR_COUNT" ] && ERROR_COUNT="0"
+    [ -z "$WARNING_COUNT" ] && WARNING_COUNT="0"
 
     echo -e "${CYAN}⏱  Build Time:${NC}  ${BUILD_DURATION}s"
 
@@ -269,7 +271,7 @@ if [ -f "$LOG_FILE" ]; then
     # 오류 상세 표시
     if [ "$ERROR_COUNT" -gt 0 ]; then
         echo -e "${RED}${BOLD}━━━ Errors ━━━${NC}"
-        grep -n "error:" "$LOG_FILE" | head -20 | while read -r line; do
+        grep -En "[0-9]+:[0-9]+:[0-9]+: error:" "$LOG_FILE" | head -20 | while read -r line; do
             echo -e "${RED}  $line${NC}"
         done
         echo ""
@@ -278,7 +280,7 @@ if [ -f "$LOG_FILE" ]; then
     # 경고 상세 표시
     if [ "$WARNING_COUNT" -gt 0 ]; then
         echo -e "${YELLOW}${BOLD}━━━ Warnings ━━━${NC}"
-        grep -n "warning:" "$LOG_FILE" | head -20 | while read -r line; do
+        grep -En "[0-9]+:[0-9]+:[0-9]+: warning:" "$LOG_FILE" | head -20 | while read -r line; do
             echo -e "${YELLOW}  $line${NC}"
         done
         if [ "$WARNING_COUNT" -gt 20 ]; then

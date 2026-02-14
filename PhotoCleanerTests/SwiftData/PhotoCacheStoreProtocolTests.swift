@@ -69,6 +69,43 @@ struct PhotoCacheStoreProtocolTests {
         await store.deleteAssets(withIdentifiers: ["asset-1"])
         #expect(await store.fetchAllIdentifiers().isEmpty)
     }
+    
+    @Test("없는 식별자 삭제 호출은 안전하게 무시된다")
+    @MainActor
+    func deletingUnknownIdentifierIsNoop() async {
+        let store = InMemoryPhotoCacheStoreContractDouble()
+        
+        await store.insertNewAssets([
+            NewAssetInfo(localIdentifier: "asset-1", creationDate: nil, pixelWidth: 100, pixelHeight: 100, mediaSubtypes: 0)
+        ])
+        
+        await store.deleteAssets(withIdentifiers: ["not-found"])
+        
+        #expect(await store.fetchAllIdentifiers() == Set(["asset-1"]))
+    }
+    
+    @Test("해시 조회는 해시가 없는 항목을 제외한다")
+    @MainActor
+    func fetchScannedAssetsWithHashFiltersMissingValues() async {
+        let store = InMemoryPhotoCacheStoreContractDouble()
+        
+        await store.insertNewAssets([
+            NewAssetInfo(localIdentifier: "hashed", creationDate: nil, pixelWidth: 100, pixelHeight: 100, mediaSubtypes: 0),
+            NewAssetInfo(localIdentifier: "missing", creationDate: nil, pixelWidth: 100, pixelHeight: 100, mediaSubtypes: 0)
+        ])
+        
+        await store.updateAssetScanResult(identifier: "hashed", result: ScanResultInfo(
+            hash: "hash-value",
+            byteCount: 1024,
+            featurePrintData: nil,
+            issues: []
+        ))
+        
+        let hashedAssets = await store.fetchScannedAssetsWithHash()
+        #expect(hashedAssets.count == 1)
+        #expect(hashedAssets.first?.identifier == "hashed")
+        #expect(hashedAssets.first?.hash == "hash-value")
+    }
 }
 
 final class InMemoryPhotoCacheStoreContractDouble: PhotoCacheStoreProtocol, @unchecked Sendable {
