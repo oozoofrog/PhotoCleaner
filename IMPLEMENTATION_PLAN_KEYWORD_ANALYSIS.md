@@ -247,13 +247,13 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 2. `GRDBPhotoStore`를 생성해 `DashboardViewModel`에 주입한다.
  - 진행 상태: 완료
 3. `DashboardViewModel`의 저장소 참조를 GRDB 구현체 기준으로 정리한다.
- - 진행 상태: 진행 중 (부트스트랩 주입 경로는 GRDB로 전환, 내부 SwiftData 의존 정리는 이어서 정리)
+ - 진행 상태: 완료 (부트스트랩은 `PhotoCacheStoreProtocol` 기반 주입으로 통일)
 4. SwiftData import가 필요 없는 파일에서 제거한다.
- - 진행 상태: 진행 중 (`PhotoCleanerApp`, `DashboardViewModel`에서 제거; SwiftData 기능 파일 정리 단계는 Phase 7)
+ - 진행 상태: 진행 중 (`PhotoCleanerApp`, `DashboardViewModel`에서 제거; SwiftData 구현/모델 정리는 Phase 7)
 5. (DDD/OOP) ViewModel은 도메인 서비스/저장소 프로토콜에만 의존하도록 경계를 고정한다.
- - 진행 상태: 진행 중 (현재 `DashboardViewModel`은 `PhotoCacheStoreProtocol`을 통해 주입)
+ - 진행 상태: 진행 중 (`DashboardViewModel`은 `PhotoCacheStoreProtocol` 주입을 사용)
 6. (Factory/Pure DI) 앱 진입점에서 Factory를 통해 ViewModel/Service를 조립하고, 기능 코드에서 직접 생성/전역 조회를 금지한다.
- - 진행 상태: 진행 중 (앱 진입점에서 `GRDBPhotoStore`를 생성해 DI)
+ - 진행 상태: 완료 (`AppBootstrapFactory`로 `DashboardViewModel` 조립 분리)
 
 ### 검증
 - 앱 런치 후 초기 동기화(`performInitialSync`) 정상 동작 (다음 단계에서 수동 확인 필요)
@@ -264,8 +264,8 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 - [ ] TDD: 부트스트랩 전환 관련 통합 테스트(주입/초기 동기화)를 먼저 작성/통과했다.
 - [ ] DDD: ViewModel은 도메인 서비스/저장소 프로토콜 경계만 의존한다.
 - [ ] OOP: ViewModel은 상태 관리 책임만 가지고 조립 책임을 갖지 않는다.
-- [ ] Factory: ViewModel/Service 생성은 Factory로 분리되어 생성 중복이 제거됐다.
-- [ ] Pure DI: `PhotoCleanerApp`(Composition Root)에서 명시적으로 의존성을 조립한다.
+- [x] Factory: ViewModel 생성은 `AppBootstrapFactory`로 분리되어 생성 중복이 감소했다.
+- [x] Pure DI: `PhotoCleanerApp`에서 `AppBootstrapFactory`를 통해 의존성을 조립한다.
 - [ ] Tidy First: import/구조 정리 커밋과 동작 전환 커밋을 분리했다.
 
 ---

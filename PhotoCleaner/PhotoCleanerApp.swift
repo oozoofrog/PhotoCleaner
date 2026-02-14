@@ -12,12 +12,7 @@ struct PhotoCleanerApp: App {
     @State private var viewModel: DashboardViewModel
     
     init() {
-        do {
-            let cacheStore = try GRDBPhotoStore.makeDefault()
-            _viewModel = State(initialValue: DashboardViewModel(cacheStore: cacheStore))
-        } catch {
-            fatalError("Failed to create GRDBPhotoStore: \(error)")
-        }
+        _viewModel = State(initialValue: AppBootstrapFactory.makeDashboardViewModel())
     }
 
     var body: some Scene {
