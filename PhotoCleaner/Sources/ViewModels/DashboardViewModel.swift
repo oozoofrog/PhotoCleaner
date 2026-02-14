@@ -7,7 +7,6 @@
 
 import SwiftUI
 import Photos
-import SwiftData
 
 /// 앱 전체 상태
 enum AppState {

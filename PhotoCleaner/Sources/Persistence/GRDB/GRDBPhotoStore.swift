@@ -21,12 +21,12 @@ final class GRDBPhotoStore: PhotoCacheStoreProtocol, @unchecked Sendable {
         self.databaseManager = databaseManager
     }
 
-    static func makeInMemory() async throws -> GRDBPhotoStore {
+    static func makeInMemory() throws -> GRDBPhotoStore {
         let manager = try DatabaseManager.makeInMemory()
         return GRDBPhotoStore(databaseManager: manager)
     }
 
-    static func makeDefault() async throws -> GRDBPhotoStore {
+    static func makeDefault() throws -> GRDBPhotoStore {
         let manager = try DatabaseManager.makeDefault()
         return GRDBPhotoStore(databaseManager: manager)
     }

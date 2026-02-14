@@ -233,8 +233,9 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 앱 실행 시 기본 저장소가 GRDB가 되도록 전환한다.
 
 ### 진행 현황 (2026-02-15)
-- 상태: 시작 전
-- 업데이트: 없음
+- 상태: 진행 중
+- 업데이트: `PhotoCleanerApp`에서 `ModelContainer` 제거 후 GRDB 스토어 기본 주입 경로 반영.
+- 업데이트: `PhotoCleanerTests/GRDB/GRDBPhotoStoreTests.swift` 동기 생성자 반영에 맞춰 앱 시작 경로에서 GRDB 주입을 사용하도록 정렬.
 
 ### 변경 대상
 - `PhotoCleaner/PhotoCleanerApp.swift`
@@ -242,15 +243,22 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 
 ### 작업
 1. `PhotoCleanerApp`에서 `ModelContainer` 초기화를 제거한다.
+ - 진행 상태: 완료
 2. `GRDBPhotoStore`를 생성해 `DashboardViewModel`에 주입한다.
+ - 진행 상태: 완료
 3. `DashboardViewModel`의 저장소 참조를 GRDB 구현체 기준으로 정리한다.
+ - 진행 상태: 진행 중 (부트스트랩 주입 경로는 GRDB로 전환, 내부 SwiftData 의존 정리는 이어서 정리)
 4. SwiftData import가 필요 없는 파일에서 제거한다.
+ - 진행 상태: 진행 중 (`PhotoCleanerApp`, `DashboardViewModel`에서 제거; SwiftData 기능 파일 정리 단계는 Phase 7)
 5. (DDD/OOP) ViewModel은 도메인 서비스/저장소 프로토콜에만 의존하도록 경계를 고정한다.
+ - 진행 상태: 진행 중 (현재 `DashboardViewModel`은 `PhotoCacheStoreProtocol`을 통해 주입)
 6. (Factory/Pure DI) 앱 진입점에서 Factory를 통해 ViewModel/Service를 조립하고, 기능 코드에서 직접 생성/전역 조회를 금지한다.
+ - 진행 상태: 진행 중 (앱 진입점에서 `GRDBPhotoStore`를 생성해 DI)
 
 ### 검증
-- 앱 런치 후 초기 동기화(`performInitialSync`) 정상 동작
-- 수동 스캔 1회 실행/완료 확인
+- 앱 런치 후 초기 동기화(`performInitialSync`) 정상 동작 (다음 단계에서 수동 확인 필요)
+- 수동 스캔 1회 실행/완료 확인 (다음 단계에서 수동 확인 필요)
+- 최신 실행: `./scripts/build-check.sh test` -> `passed_tests: 146`, `errors: 0`, `warnings: 0`, `failed_tests: 0` (2026-02-15)
 
 ### 원칙 준수 게이트 (Phase 3 종료 조건)
 - [ ] TDD: 부트스트랩 전환 관련 통합 테스트(주입/초기 동기화)를 먼저 작성/통과했다.

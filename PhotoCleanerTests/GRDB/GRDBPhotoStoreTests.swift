@@ -14,7 +14,7 @@ struct GRDBPhotoStoreTests {
     
     @Test("in-memory GRDBPhotoStore는 빈 상태로 시작한다")
     func startsEmpty() async throws {
-        let store = try await GRDBPhotoStore.makeInMemory()
+        let store = try GRDBPhotoStore.makeInMemory()
         
         #expect(await store.fetchAllIdentifiers().isEmpty)
         #expect(await store.fetchKeywordSummary(limit: 10).isEmpty)
@@ -22,7 +22,7 @@ struct GRDBPhotoStoreTests {
     
     @Test("새로운 에셋은 insert 후 식별자로 조회된다")
     func insertAndFetchAllIdentifiers() async throws {
-        let store = try await GRDBPhotoStore.makeInMemory()
+        let store = try GRDBPhotoStore.makeInMemory()
         
         await store.insertNewAssets([
             NewAssetInfo(localIdentifier: "asset-1", creationDate: nil, pixelWidth: 1024, pixelHeight: 768, mediaSubtypes: 0),
@@ -36,7 +36,7 @@ struct GRDBPhotoStoreTests {
     
     @Test("deleteAssets는 지정한 식별자만 삭제한다")
     func deleteSpecificIdentifiers() async throws {
-        let store = try await GRDBPhotoStore.makeInMemory()
+        let store = try GRDBPhotoStore.makeInMemory()
         
         await store.insertNewAssets([
             NewAssetInfo(localIdentifier: "keep-1", creationDate: nil, pixelWidth: 100, pixelHeight: 100, mediaSubtypes: 0),
@@ -52,7 +52,7 @@ struct GRDBPhotoStoreTests {
     
     @Test("updateAssetScanResult는 해시와 feature print를 저장한다")
     func updateScanResultStoresHashAndFeaturePrint() async throws {
-        let store = try await GRDBPhotoStore.makeInMemory()
+        let store = try GRDBPhotoStore.makeInMemory()
         
         await store.insertNewAssets([
             NewAssetInfo(localIdentifier: "asset-1", creationDate: nil, pixelWidth: 100, pixelHeight: 100, mediaSubtypes: 0)
@@ -92,7 +92,7 @@ struct GRDBPhotoStoreTests {
     
     @Test("saveKeywords는 기존 키워드를 자산 단위로 교체한다")
     func saveKeywordsReplacesExistingKeywordsForAsset() async throws {
-        let store = try await GRDBPhotoStore.makeInMemory()
+        let store = try GRDBPhotoStore.makeInMemory()
         
         await store.insertNewAssets([
             NewAssetInfo(localIdentifier: "asset-1", creationDate: nil, pixelWidth: 100, pixelHeight: 100, mediaSubtypes: 0)
@@ -127,7 +127,7 @@ struct GRDBPhotoStoreTests {
     
     @Test("fetchKeywords는 confidence 내림차순, keyword 오름차순으로 정렬된다")
     func keywordsAreSortedByConfidenceThenName() async throws {
-        let store = try await GRDBPhotoStore.makeInMemory()
+        let store = try GRDBPhotoStore.makeInMemory()
         
         await store.insertNewAssets([
             NewAssetInfo(localIdentifier: "asset-1", creationDate: nil, pixelWidth: 100, pixelHeight: 100, mediaSubtypes: 0)
@@ -169,7 +169,7 @@ struct GRDBPhotoStoreTests {
     
     @Test("키워드 요약은 에셋 단위로 집계한다")
     func keywordSummaryAggregatesByAssetAndLanguage() async throws {
-        let store = try await GRDBPhotoStore.makeInMemory()
+        let store = try GRDBPhotoStore.makeInMemory()
         
         await store.insertNewAssets([
             NewAssetInfo(localIdentifier: "asset-1", creationDate: nil, pixelWidth: 100, pixelHeight: 100, mediaSubtypes: 0),

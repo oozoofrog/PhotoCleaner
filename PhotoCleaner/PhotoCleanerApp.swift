@@ -6,23 +6,18 @@
 //
 
 import SwiftUI
-import SwiftData
 
 @main
 struct PhotoCleanerApp: App {
-    private let modelContainer: ModelContainer
     @State private var viewModel: DashboardViewModel
     
     init() {
-        let schema = Schema([CachedPhotoAsset.self, CachedPhotoIssue.self, SyncMetadata.self])
         do {
-            modelContainer = try ModelContainer(for: schema)
+            let cacheStore = try GRDBPhotoStore.makeDefault()
+            _viewModel = State(initialValue: DashboardViewModel(cacheStore: cacheStore))
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            fatalError("Failed to create GRDBPhotoStore: \(error)")
         }
-        
-        let cacheStore = PhotoCacheStore(modelContainer: modelContainer)
-        _viewModel = State(initialValue: DashboardViewModel(cacheStore: cacheStore))
     }
 
     var body: some Scene {
@@ -32,6 +27,5 @@ struct PhotoCleanerApp: App {
                     await viewModel.performInitialSync()
                 }
         }
-        .modelContainer(modelContainer)
     }
 }
