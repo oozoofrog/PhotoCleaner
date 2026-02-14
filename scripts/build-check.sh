@@ -8,7 +8,7 @@
 #   ./scripts/build-check.sh clean     # 클린 빌드
 #   ./scripts/build-check.sh test      # 테스트 실행
 
-set -e
+set -euo pipefail
 
 # 색상 정의
 RED='\033[0;31m'
@@ -23,15 +23,36 @@ BOLD='\033[1m'
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 PROJECT_PATH="$PROJECT_DIR/PhotoCleaner.xcodeproj"
+PROJECT_PBX_PATH="$PROJECT_PATH/project.pbxproj"
 SCHEME="PhotoCleaner"
 DERIVED_DATA="$PROJECT_DIR/DerivedData"
 LOG_FILE="$PROJECT_DIR/.build-log.txt"
+BUILD_RESULT_FILE="$PROJECT_DIR/.build-result.toon"
 
 # 기본값
 CONFIGURATION="Debug"
 CLEAN_BUILD=false
 RUN_TESTS=false
 QUIET_MODE=false
+
+# 도움말
+validate_project() {
+    if [ ! -d "$PROJECT_PATH" ]; then
+        echo -e "${RED}❌ Project file not found: $PROJECT_PATH${NC}"
+        exit 1
+    fi
+
+    if [ ! -f "$PROJECT_PBX_PATH" ]; then
+        echo -e "${RED}❌ project.pbxproj not found: $PROJECT_PBX_PATH${NC}"
+        exit 1
+    fi
+
+    if ! xcodebuild -list -project "$PROJECT_PATH" >/dev/null 2>&1; then
+        echo -e "${RED}❌ xcodebuild cannot read project (project may be malformed).${NC}"
+        echo -e "${YELLOW}Run: xcodebuild -list -project \"$PROJECT_PATH\"${NC}"
+        exit 1
+    fi
+}
 
 # 도움말
 show_help() {
@@ -92,6 +113,8 @@ echo -e "${CYAN}Clean Build:${NC}   $CLEAN_BUILD"
 echo -e "${CYAN}Run Tests:${NC}     $RUN_TESTS"
 echo ""
 
+validate_project
+
 # 클린 빌드
 if [ "$CLEAN_BUILD" = true ]; then
     echo -e "${YELLOW}🧹 Cleaning build...${NC}"
@@ -126,21 +149,17 @@ echo ""
 
 BUILD_START=$(date +%s)
 
-# xcbeautify 사용 가능 여부 확인
-if command -v xcbeautify &> /dev/null; then
-    if [ "$QUIET_MODE" = true ]; then
-        # 조용한 모드: 로그 파일에 저장하고 경고/오류만 표시
-        eval "$BUILD_CMD" 2>&1 | tee "$LOG_FILE" | xcbeautify --quiet
-        BUILD_EXIT_CODE=${PIPESTATUS[0]}
-    else
-        eval "$BUILD_CMD" 2>&1 | tee "$LOG_FILE" | xcbeautify
-        BUILD_EXIT_CODE=${PIPESTATUS[0]}
-    fi
-else
-    # xcbeautify 없이 실행
-    eval "$BUILD_CMD" 2>&1 | tee "$LOG_FILE"
-    BUILD_EXIT_CODE=${PIPESTATUS[0]}
+if ! command -v xcsift &> /dev/null; then
+    echo -e "${RED}❌ xcsift not found. Install: brew install xcsift${NC}"
+    exit 1
 fi
+
+if [ "$QUIET_MODE" = true ]; then
+    eval "$BUILD_CMD" 2>&1 | tee "$LOG_FILE" | xcsift -f toon --quiet | tee "$BUILD_RESULT_FILE"
+else
+    eval "$BUILD_CMD" 2>&1 | tee "$LOG_FILE" | xcsift -f toon | tee "$BUILD_RESULT_FILE"
+fi
+BUILD_EXIT_CODE=${PIPESTATUS[0]}
 
 BUILD_END=$(date +%s)
 BUILD_DURATION=$((BUILD_END - BUILD_START))

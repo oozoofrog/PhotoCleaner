@@ -613,11 +613,11 @@
 
 /* Begin XCRemoteSwiftPackageProductDependency section */
 		74E3EAF02F06BF39004601C0 /* GRDB */ = {
-			isa = XCRemoteSwiftPackageProductDependency;
+			isa = XCSwiftPackageProductDependency;
 			package = 74E3EAF12F06BF39004601C0 /* XCRemoteSwiftPackageReference "GRDB.swift" */;
 			productName = GRDB;
 		};
 /* End XCRemoteSwiftPackageProductDependency section */
 		};
-	rootObject = 74E3EA6B2F06BF36004601C0 /* Project object */;
+		rootObject = 74E3EA6B2F06BF36004601C0 /* Project object */;
 }
