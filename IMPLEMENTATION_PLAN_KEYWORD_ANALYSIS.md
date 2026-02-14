@@ -14,6 +14,7 @@
 - 코드 변경 직후 해당 Phase의 `작업`, `검증`, `원칙 준수 게이트` 항목에 상태를 즉시 반영한다.
 - 진행상황은 문서 마지막 별도 로그가 아니라 각 작업 내용(Phase 본문)에 기록한다.
 - 테스트/빌드 실패 시 실패 원인과 재현 명령을 해당 Phase `검증` 바로 아래에 남긴다.
+- 작업이 끝난 직후(요청 유무와 무관) 관련 테스트/검증 명령을 실행하고 결과를 즉시 반영한다.
 
 ---
 
@@ -205,17 +206,19 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 4. 키워드 저장/조회용 메서드를 프로토콜에 추가한다.
  - 진행 상태: 완료
 5. (TDD) 저장소 메서드별 실패 테스트를 먼저 작성한 뒤 CRUD를 구현한다.
- - 진행 상태: 진행 중 (`PhotoCacheStoreProtocolTests`에 키워드 계약 테스트 추가 완료, GRDB 전용 테스트 보강 남음)
+ - 진행 상태: 완료 (`PhotoCacheStoreProtocolTests` 계약 테스트 및 `PhotoCleanerTests/GRDB/GRDBPhotoStoreTests.swift` 추가로 GRDB 전용 테스트 작성 완료, `./scripts/build-check.sh test` 통과)
 6. (OOP) SQL 상세는 저장소 내부로 캡슐화하고 상위 계층에 쿼리 문자열을 노출하지 않는다.
  - 진행 상태: 진행 중 (GRDB 저장소 내부 캡슐화 완료, 키워드 도메인 적용 구간 추가 점검 예정)
 
 ### 검증
 - 신규 저장소 단위 테스트 작성/통과
 - 기존 `PhotoLibrarySyncService` 테스트가 GRDB 구현체/Mock 기반으로 통과
-- 최신 실행: `./scripts/build-check.sh test` -> `passed_tests: 138`, `errors: 0`, `warnings: 0`
+- 최신 실행: `./scripts/build-check.sh test` -> `passed_tests: 145`, `errors: 0`, `warnings: 0`, `failed_tests: 0` (2026-02-15)
+- 작업 종료 시 자동 실행 규칙 반영 후 `./scripts/build-check.sh test` 결과로 GRDB 전용 테스트 포함 전체 통과 확인.
+- 추가 반영: GRDB 전용 테스트 파일(`PhotoCleanerTests/GRDB/GRDBPhotoStoreTests.swift`)을 추가해 `Phase 2` 핵심 저장소 경로를 문서 기준으로 보강함.
 
 ### 원칙 준수 게이트 (Phase 2 종료 조건)
-- [ ] TDD: 저장소 CRUD/조회 메서드별 실패 테스트를 먼저 작성하고 통과했다.
+- [x] TDD: 저장소 CRUD/조회 메서드별 실패 테스트를 먼저 작성하고 통과했다.
 - [ ] DDD: `Photo Catalog Persistence` 경계 안에서만 SQL/스키마 로직을 다룬다.
 - [ ] OOP: `GRDBPhotoStore`가 저장 책임만 가지며 상위 계층은 프로토콜만 본다.
 - [ ] Factory: DB/Store 생성 규칙은 생성 전용 객체(Factory/Builder)에 캡슐화했다.
