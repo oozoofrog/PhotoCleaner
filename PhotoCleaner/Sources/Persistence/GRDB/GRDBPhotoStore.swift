@@ -264,6 +264,118 @@ final class GRDBPhotoStore: PhotoCacheStoreProtocol, @unchecked Sendable {
         }
     }
 
+    func saveKeywords(for identifier: String, keywords: sending [AssetKeywordDTO]) async {
+        let assetsTable = Self.photoAssetsTable
+        let keywordsTable = Self.photoKeywordsTable
+        let summaryTable = Self.keywordSummaryTable
+
+        try? databaseManager.write { db in
+            guard let _: String = try String.fetchOne(
+                db,
+                sql: "SELECT local_identifier FROM \(assetsTable) WHERE local_identifier = ?",
+                arguments: [identifier]
+            ) else {
+                return
+            }
+
+            try db.execute(
+                sql: "DELETE FROM \(keywordsTable) WHERE asset_identifier = ?",
+                arguments: [identifier]
+            )
+
+            for keyword in keywords {
+                try db.execute(
+                    sql: """
+                        INSERT INTO \(keywordsTable)
+                            (asset_identifier, keyword, confidence, language_code, created_at, is_manual)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    arguments: [
+                        identifier,
+                        keyword.keyword,
+                        keyword.confidence,
+                        keyword.languageCode,
+                        Int64(keyword.createdAt.timeIntervalSince1970),
+                        keyword.isManual ? 1 : 0
+                    ]
+                )
+            }
+
+            try Self.rebuildKeywordSummary(db, keywordsTable: keywordsTable, summaryTable: summaryTable)
+        }
+    }
+
+    func fetchKeywords(for identifier: String) async -> [AssetKeywordDTO] {
+        let keywordsTable = Self.photoKeywordsTable
+
+        let rows: [AssetKeywordDTO]? = try? databaseManager.read { db in
+            let result: [Row] = try Row.fetchAll(
+                db,
+                sql: """
+                    SELECT asset_identifier, keyword, confidence, language_code, created_at, is_manual
+                    FROM \(keywordsTable)
+                    WHERE asset_identifier = ?
+                    ORDER BY confidence DESC, keyword ASC
+                """,
+                arguments: [identifier]
+            )
+
+            return result.map { row in
+                let assetIdentifier: String = row["asset_identifier"] as String
+                let keyword: String = row["keyword"] as String
+                let confidence: Double = row["confidence"] as Double? ?? 0
+                let languageCode: String = row["language_code"] as String? ?? ""
+                let createdAtSeconds: Int64 = row["created_at"] as Int64? ?? 0
+                let isManual: Int64 = row["is_manual"] as Int64? ?? 0
+
+                return AssetKeywordDTO(
+                    assetIdentifier: assetIdentifier,
+                    keyword: keyword,
+                    confidence: confidence,
+                    languageCode: languageCode,
+                    createdAt: Date(timeIntervalSince1970: TimeInterval(createdAtSeconds)),
+                    isManual: isManual == 1
+                )
+            }
+        }
+
+        return rows ?? []
+    }
+
+    func fetchKeywordSummary(limit: Int) async -> [KeywordSummaryDTO] {
+        guard limit >= 0 else { return [] }
+        let summaryTable = Self.keywordSummaryTable
+
+        let rows: [KeywordSummaryDTO]? = try? databaseManager.read { db in
+            let result: [Row] = try Row.fetchAll(
+                db,
+                sql: """
+                    SELECT keyword, language_code, asset_count, updated_at
+                    FROM \(summaryTable)
+                    ORDER BY asset_count DESC, keyword ASC
+                    LIMIT ?
+                """,
+                arguments: [limit]
+            )
+
+            return result.map { row in
+                let keyword: String = row["keyword"] as String
+                let languageCode: String = row["language_code"] as String? ?? ""
+                let assetCount: Int64 = row["asset_count"] as Int64? ?? 0
+                let updatedAtSeconds: Int64 = row["updated_at"] as Int64? ?? 0
+
+                return KeywordSummaryDTO(
+                    keyword: keyword,
+                    languageCode: languageCode,
+                    assetCount: Int(assetCount),
+                    updatedAt: Date(timeIntervalSince1970: TimeInterval(updatedAtSeconds))
+                )
+            }
+        }
+
+        return rows ?? []
+    }
+
     func saveSyncToken(_ token: Data) async {
         let metadataTable = Self.syncMetadataTable
         let key = Self.syncMetadataKey
@@ -330,5 +442,19 @@ final class GRDBPhotoStore: PhotoCacheStoreProtocol, @unchecked Sendable {
     private static func date(fromSecondsSince1970 value: Int64?) -> Date? {
         guard let value else { return nil }
         return Date(timeIntervalSince1970: TimeInterval(value))
+    }
+
+    private static func rebuildKeywordSummary(_ db: Database, keywordsTable: String, summaryTable: String) throws {
+        try db.execute(sql: "DELETE FROM \(summaryTable)")
+
+        try db.execute(
+            sql: """
+                INSERT INTO \(summaryTable) (keyword, language_code, asset_count, updated_at)
+                SELECT keyword, language_code, COUNT(DISTINCT asset_identifier), ?
+                FROM \(keywordsTable)
+                GROUP BY keyword, language_code
+            """,
+            arguments: [Int64(Date().timeIntervalSince1970)]
+        )
     }
 }

@@ -176,9 +176,11 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 
 ### 진행 현황 (2026-02-15)
 - 상태: 진행 중
-- 업데이트: `DatabaseMigrations`, `DatabaseManager`, `GRDBPhotoStore` 구현 및 컴파일 오류 정리 완료.
-- 남은 작업: 키워드 저장/조회 메서드의 프로토콜 확장과 저장소 단위 테스트 보강.
-- 검증: `./scripts/build-check.sh test` 통과 (`passed_tests: 137`, `errors: 0`).
+- 업데이트: `PhotoCacheStoreProtocol`에 키워드 저장/조회 계약(`AssetKeywordDTO`, `KeywordSummaryDTO`) 추가 완료.
+- 업데이트: `GRDBPhotoStore` 및 `PhotoCacheStore(SwiftData)`에 키워드 저장/조회/요약 집계 구현 완료.
+- 업데이트: 계약 테스트/Mock를 신규 계약에 맞게 보강 완료.
+- 남은 작업: GRDB 전용 저장소 단위 테스트 보강 및 Phase 2 게이트 체크 정리.
+- 검증: `./scripts/build-check.sh test` 통과 (`passed_tests: 138`, `errors: 0`, `warnings: 0`).
 
 ### 변경 대상
 - `PhotoCleaner/Sources/Persistence/GRDB/DatabaseManager.swift` (신규)
@@ -192,18 +194,25 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 - `photo_keywords`
 - `keyword_summary`
 - `sync_metadata`
+ - 진행 상태: 완료
 2. 인덱스 생성:
 - `idx_photo_issues_asset`
 - `idx_photo_keywords_asset`
 - `idx_photo_keywords_keyword`
+ - 진행 상태: 완료
 3. `PhotoCacheStoreProtocol`의 기존 메서드를 GRDB에서 동일하게 제공한다.
+ - 진행 상태: 완료
 4. 키워드 저장/조회용 메서드를 프로토콜에 추가한다.
+ - 진행 상태: 완료
 5. (TDD) 저장소 메서드별 실패 테스트를 먼저 작성한 뒤 CRUD를 구현한다.
+ - 진행 상태: 진행 중 (`PhotoCacheStoreProtocolTests`에 키워드 계약 테스트 추가 완료, GRDB 전용 테스트 보강 남음)
 6. (OOP) SQL 상세는 저장소 내부로 캡슐화하고 상위 계층에 쿼리 문자열을 노출하지 않는다.
+ - 진행 상태: 진행 중 (GRDB 저장소 내부 캡슐화 완료, 키워드 도메인 적용 구간 추가 점검 예정)
 
 ### 검증
 - 신규 저장소 단위 테스트 작성/통과
 - 기존 `PhotoLibrarySyncService` 테스트가 GRDB 구현체/Mock 기반으로 통과
+- 최신 실행: `./scripts/build-check.sh test` -> `passed_tests: 138`, `errors: 0`, `warnings: 0`
 
 ### 원칙 준수 게이트 (Phase 2 종료 조건)
 - [ ] TDD: 저장소 CRUD/조회 메서드별 실패 테스트를 먼저 작성하고 통과했다.

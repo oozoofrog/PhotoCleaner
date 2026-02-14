@@ -59,6 +59,22 @@ struct ScanResultInfo: Sendable {
     let issues: [CachedIssueDTO]
 }
 
+struct AssetKeywordDTO: Sendable {
+    let assetIdentifier: String
+    let keyword: String
+    let confidence: Double
+    let languageCode: String
+    let createdAt: Date
+    let isManual: Bool
+}
+
+struct KeywordSummaryDTO: Sendable {
+    let keyword: String
+    let languageCode: String
+    let assetCount: Int
+    let updatedAt: Date
+}
+
 protocol PhotoCacheStoreProtocol: Sendable {
     func fetchAllIdentifiers() async -> Set<String>
     func fetchPendingAssets(limit: Int) async -> [CachedAssetDTO]
@@ -68,6 +84,9 @@ protocol PhotoCacheStoreProtocol: Sendable {
     func deleteAssets(withIdentifiers identifiers: Set<String>) async
     func updateAssetScanResult(identifier: String, result: sending ScanResultInfo) async
     func markAssetAsFailed(identifier: String, reason: String) async
+    func saveKeywords(for identifier: String, keywords: sending [AssetKeywordDTO]) async
+    func fetchKeywords(for identifier: String) async -> [AssetKeywordDTO]
+    func fetchKeywordSummary(limit: Int) async -> [KeywordSummaryDTO]
     func saveSyncToken(_ token: Data) async
     func fetchSyncToken() async -> Data?
     func clearAllData() async

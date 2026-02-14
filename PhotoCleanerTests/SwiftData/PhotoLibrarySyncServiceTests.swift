@@ -132,6 +132,7 @@ final class MockPhotoCacheStore: PhotoCacheStoreProtocol {
     private var assetIds: Set<String> = []
     private var syncToken: Data?
     private var insertedAssetIds: [String] = []
+    private var keywordsByAsset: [String: [AssetKeywordDTO]] = [:]
     
     func getInsertedAssetsCount() -> Int {
         insertedAssetIds.count
@@ -179,6 +180,19 @@ final class MockPhotoCacheStore: PhotoCacheStoreProtocol {
     func updateAssetScanResult(identifier: String, result: sending ScanResultInfo) async {}
     
     func markAssetAsFailed(identifier: String, reason: String) async {}
+
+    func saveKeywords(for identifier: String, keywords: sending [AssetKeywordDTO]) async {
+        keywordsByAsset[identifier] = keywords
+    }
+
+    func fetchKeywords(for identifier: String) async -> [AssetKeywordDTO] {
+        keywordsByAsset[identifier] ?? []
+    }
+
+    func fetchKeywordSummary(limit: Int) async -> [KeywordSummaryDTO] {
+        guard limit >= 0 else { return [] }
+        return []
+    }
     
     func saveSyncToken(_ token: Data) async {
         syncToken = token
@@ -192,6 +206,7 @@ final class MockPhotoCacheStore: PhotoCacheStoreProtocol {
         assetIds.removeAll()
         syncToken = nil
         insertedAssetIds.removeAll()
+        keywordsByAsset.removeAll()
     }
 }
 

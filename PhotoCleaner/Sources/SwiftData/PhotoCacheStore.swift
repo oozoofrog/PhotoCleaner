@@ -11,6 +11,8 @@ actor PhotoCacheStore: PhotoCacheStoreProtocol {
     
     nonisolated private static let syncMetadataKey = "photoLibraryToken"
     nonisolated private static let currentSchemaVersion = 1
+    private var keywordsByAsset: [String: [AssetKeywordDTO]] = [:]
+    private var keywordSummary: [KeywordSummaryDTO] = []
     
     func fetchAllIdentifiers() async -> Set<String> {
         let descriptor = FetchDescriptor<CachedPhotoAsset>()
@@ -103,7 +105,9 @@ actor PhotoCacheStore: PhotoCacheStoreProtocol {
                     modelContext.delete(asset)
                 }
             }
+            keywordsByAsset.removeValue(forKey: identifier)
         }
+        rebuildKeywordSummary()
         try? modelContext.save()
     }
     
@@ -151,6 +155,35 @@ actor PhotoCacheStore: PhotoCacheStoreProtocol {
         
         try? modelContext.save()
     }
+
+    func saveKeywords(for identifier: String, keywords: sending [AssetKeywordDTO]) async {
+        keywordsByAsset[identifier] = keywords.map { keyword in
+            AssetKeywordDTO(
+                assetIdentifier: identifier,
+                keyword: keyword.keyword,
+                confidence: keyword.confidence,
+                languageCode: keyword.languageCode,
+                createdAt: keyword.createdAt,
+                isManual: keyword.isManual
+            )
+        }
+        rebuildKeywordSummary()
+    }
+
+    func fetchKeywords(for identifier: String) async -> [AssetKeywordDTO] {
+        let keywords = keywordsByAsset[identifier] ?? []
+        return keywords.sorted {
+            if $0.confidence == $1.confidence {
+                return $0.keyword < $1.keyword
+            }
+            return $0.confidence > $1.confidence
+        }
+    }
+
+    func fetchKeywordSummary(limit: Int) async -> [KeywordSummaryDTO] {
+        guard limit >= 0 else { return [] }
+        return Array(keywordSummary.prefix(limit))
+    }
     
     func saveSyncToken(_ token: Data) async {
         let key = Self.syncMetadataKey
@@ -187,7 +220,51 @@ actor PhotoCacheStore: PhotoCacheStoreProtocol {
         try? modelContext.delete(model: CachedPhotoAsset.self)
         try? modelContext.delete(model: CachedPhotoIssue.self)
         try? modelContext.delete(model: SyncMetadata.self)
+        keywordsByAsset.removeAll()
+        keywordSummary.removeAll()
         try? modelContext.save()
+    }
+
+    private func rebuildKeywordSummary() {
+        var groupedAssetIds: [String: Set<String>] = [:]
+        var groupedMetadata: [String: (keyword: String, languageCode: String, updatedAt: Date)] = [:]
+
+        for (assetIdentifier, keywords) in keywordsByAsset {
+            for keyword in keywords {
+                let key = "\(keyword.keyword)|\(keyword.languageCode)"
+                groupedAssetIds[key, default: []].insert(assetIdentifier)
+
+                if let existing = groupedMetadata[key] {
+                    groupedMetadata[key] = (
+                        keyword: existing.keyword,
+                        languageCode: existing.languageCode,
+                        updatedAt: max(existing.updatedAt, keyword.createdAt)
+                    )
+                } else {
+                    groupedMetadata[key] = (
+                        keyword: keyword.keyword,
+                        languageCode: keyword.languageCode,
+                        updatedAt: keyword.createdAt
+                    )
+                }
+            }
+        }
+
+        keywordSummary = groupedAssetIds.compactMap { key, assetIds in
+            guard let metadata = groupedMetadata[key] else { return nil }
+            return KeywordSummaryDTO(
+                keyword: metadata.keyword,
+                languageCode: metadata.languageCode,
+                assetCount: assetIds.count,
+                updatedAt: metadata.updatedAt
+            )
+        }
+        .sorted {
+            if $0.assetCount == $1.assetCount {
+                return $0.keyword < $1.keyword
+            }
+            return $0.assetCount > $1.assetCount
+        }
     }
 }
 

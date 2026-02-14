@@ -27,6 +27,24 @@ struct PhotoCacheStoreProtocolTests {
         
         let allIds = await cacheStore.fetchAllIdentifiers()
         #expect(allIds == Set(["asset-1", "asset-2"]))
+
+        await cacheStore.saveKeywords(for: "asset-1", keywords: [
+            AssetKeywordDTO(
+                assetIdentifier: "asset-1",
+                keyword: "cat",
+                confidence: 0.98,
+                languageCode: "en",
+                createdAt: Date(),
+                isManual: false
+            )
+        ])
+
+        let keywords = await cacheStore.fetchKeywords(for: "asset-1")
+        #expect(keywords.count == 1)
+        #expect(keywords.first?.keyword == "cat")
+
+        let summary = await cacheStore.fetchKeywordSummary(limit: 10)
+        #expect(summary.contains { $0.keyword == "cat" && $0.assetCount == 1 })
     }
     
     @Test("계약 더블의 핵심 CRUD 시나리오가 동작한다")
@@ -106,11 +124,39 @@ struct PhotoCacheStoreProtocolTests {
         #expect(hashedAssets.first?.identifier == "hashed")
         #expect(hashedAssets.first?.hash == "hash-value")
     }
+
+    @Test("키워드 요약은 에셋 단위로 집계된다")
+    @MainActor
+    func keywordSummaryAggregatesByAsset() async {
+        let store = InMemoryPhotoCacheStoreContractDouble()
+
+        await store.insertNewAssets([
+            NewAssetInfo(localIdentifier: "asset-1", creationDate: nil, pixelWidth: 100, pixelHeight: 100, mediaSubtypes: 0),
+            NewAssetInfo(localIdentifier: "asset-2", creationDate: nil, pixelWidth: 100, pixelHeight: 100, mediaSubtypes: 0)
+        ])
+
+        let now = Date()
+        await store.saveKeywords(for: "asset-1", keywords: [
+            AssetKeywordDTO(assetIdentifier: "asset-1", keyword: "cat", confidence: 0.99, languageCode: "en", createdAt: now, isManual: false),
+            AssetKeywordDTO(assetIdentifier: "asset-1", keyword: "pet", confidence: 0.88, languageCode: "en", createdAt: now, isManual: false)
+        ])
+        await store.saveKeywords(for: "asset-2", keywords: [
+            AssetKeywordDTO(assetIdentifier: "asset-2", keyword: "cat", confidence: 0.97, languageCode: "en", createdAt: now, isManual: false)
+        ])
+
+        let summary = await store.fetchKeywordSummary(limit: 10)
+        let cat = summary.first { $0.keyword == "cat" && $0.languageCode == "en" }
+        let pet = summary.first { $0.keyword == "pet" && $0.languageCode == "en" }
+
+        #expect(cat?.assetCount == 2)
+        #expect(pet?.assetCount == 1)
+    }
 }
 
 final class InMemoryPhotoCacheStoreContractDouble: PhotoCacheStoreProtocol, @unchecked Sendable {
     private var assets: [String: CachedAssetDTO] = [:]
     private var token: Data?
+    private var keywordsByAsset: [String: [AssetKeywordDTO]] = [:]
     
     func fetchAllIdentifiers() async -> Set<String> {
         Set(assets.keys)
@@ -186,6 +232,68 @@ final class InMemoryPhotoCacheStoreContractDouble: PhotoCacheStoreProtocol, @unc
             resourceByteCount: nil
         )
     }
+
+    func saveKeywords(for identifier: String, keywords: sending [AssetKeywordDTO]) async {
+        keywordsByAsset[identifier] = keywords.map { keyword in
+            AssetKeywordDTO(
+                assetIdentifier: identifier,
+                keyword: keyword.keyword,
+                confidence: keyword.confidence,
+                languageCode: keyword.languageCode,
+                createdAt: keyword.createdAt,
+                isManual: keyword.isManual
+            )
+        }
+    }
+
+    func fetchKeywords(for identifier: String) async -> [AssetKeywordDTO] {
+        keywordsByAsset[identifier] ?? []
+    }
+
+    func fetchKeywordSummary(limit: Int) async -> [KeywordSummaryDTO] {
+        guard limit >= 0 else { return [] }
+
+        var groupedAssetIds: [String: Set<String>] = [:]
+        var groupedMetadata: [String: (keyword: String, languageCode: String, updatedAt: Date)] = [:]
+
+        for (assetIdentifier, keywords) in keywordsByAsset {
+            for keyword in keywords {
+                let key = "\(keyword.keyword)|\(keyword.languageCode)"
+                groupedAssetIds[key, default: []].insert(assetIdentifier)
+                if let existing = groupedMetadata[key] {
+                    groupedMetadata[key] = (
+                        keyword: existing.keyword,
+                        languageCode: existing.languageCode,
+                        updatedAt: max(existing.updatedAt, keyword.createdAt)
+                    )
+                } else {
+                    groupedMetadata[key] = (
+                        keyword: keyword.keyword,
+                        languageCode: keyword.languageCode,
+                        updatedAt: keyword.createdAt
+                    )
+                }
+            }
+        }
+
+        let summary = groupedAssetIds.compactMap { key, assetIds -> KeywordSummaryDTO? in
+            guard let metadata = groupedMetadata[key] else { return nil }
+            return KeywordSummaryDTO(
+                keyword: metadata.keyword,
+                languageCode: metadata.languageCode,
+                assetCount: assetIds.count,
+                updatedAt: metadata.updatedAt
+            )
+        }
+        .sorted {
+            if $0.assetCount == $1.assetCount {
+                return $0.keyword < $1.keyword
+            }
+            return $0.assetCount > $1.assetCount
+        }
+
+        return Array(summary.prefix(limit))
+    }
     
     func saveSyncToken(_ token: Data) async {
         self.token = token
@@ -198,5 +306,6 @@ final class InMemoryPhotoCacheStoreContractDouble: PhotoCacheStoreProtocol, @unc
     func clearAllData() async {
         assets.removeAll()
         token = nil
+        keywordsByAsset.removeAll()
     }
 }
