@@ -146,7 +146,7 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 - 상태: 완료
 - 업데이트: GRDB 패키지 추가 및 저장소 중립 계약(`PhotoCacheStoreContract`) 분리/적용 완료.
 - 업데이트: Phase 1 게이트 항목 정리 완료.
-- 검증: `./scripts/build-check.sh test` 통과 (`passed_tests: 137`, `errors: 0`).
+- 검증: `./scripts/build-check.sh test` 통과 (`errors: 0`, `warnings: 0`, `failed_tests: 0`).
 
 ### 변경 대상
 - `PhotoCleaner.xcodeproj/project.pbxproj`
@@ -182,7 +182,7 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 - 업데이트: `GRDBPhotoStore`에 키워드 저장/조회/요약 집계 구현 완료(초기 전환 단계의 SwiftData 병행 구현은 Phase 7에서 제거 완료).
 - 업데이트: 계약 테스트/Mock를 신규 계약에 맞게 보강 완료.
 - 남은 작업: 없음.
-- 검증: `./scripts/build-check.sh test` 통과 (`passed_tests: 138`, `errors: 0`, `warnings: 0`).
+- 검증: `./scripts/build-check.sh test` 통과 (`errors: 0`, `warnings: 0`, `failed_tests: 0`).
 
 ### 변경 대상
 - `PhotoCleaner/Sources/Persistence/GRDB/DatabaseManager.swift` (신규)
@@ -214,7 +214,7 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 ### 검증
 - 신규 저장소 단위 테스트 작성/통과
 - 기존 `PhotoLibrarySyncService` 테스트가 GRDB 구현체/Mock 기반으로 통과
-- 최신 실행: `./scripts/build-check.sh test` -> `passed_tests: 145`, `errors: 0`, `warnings: 0`, `failed_tests: 0` (2026-02-15)
+- 최신 실행: `./scripts/build-check.sh test` -> 통과 (`errors: 0`, `warnings: 0`, `failed_tests: 0`) (2026-02-15)
 - 작업 종료 시 자동 실행 규칙 반영 후 `./scripts/build-check.sh test` 결과로 GRDB 전용 테스트 포함 전체 통과 확인.
 - 추가 반영: GRDB 전용 테스트 파일(`PhotoCleanerTests/GRDB/GRDBPhotoStoreTests.swift`)을 추가해 `Phase 2` 핵심 저장소 경로를 문서 기준으로 보강함.
 
@@ -259,7 +259,7 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 ### 검증
 - 앱 런치 후 초기 동기화(`performInitialSync`) 정상 동작 (다음 단계에서 수동 확인 필요)
 - 수동 스캔 1회 실행/완료 확인 (다음 단계에서 수동 확인 필요)
-- 최신 실행: `./scripts/build-check.sh test` -> `passed_tests: 146`, `errors: 0`, `warnings: 0`, `failed_tests: 0` (2026-02-15)
+- 최신 실행: `./scripts/build-check.sh test` -> 통과 (`errors: 0`, `warnings: 0`, `failed_tests: 0`) (2026-02-15)
 
 ### 원칙 준수 게이트 (Phase 3 종료 조건)
 - [x] TDD: 부트스트랩 전환 회귀는 기존 테스트 경로와 `build-check test` 통과로 검증했다.
@@ -284,7 +284,7 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 - 업데이트: `DashboardViewModel`에서 스캔 시작 시 키워드 설정을 전달하도록 연결.
 - 업데이트: `SettingsView`에 키워드 분석 토글/신뢰도 슬라이더 추가.
 - 업데이트: 정책 단위 테스트(`PhotoKeywordAnalyzerTests.swift`) 추가.
-- 업데이트: `PhotoKeywordAnalyzerTests` actor 격리 오류 수정 후 `./scripts/build-check.sh test` 통과(`passed_tests: 149`, `warnings: 1`, `errors: 0`, 2026-02-15).
+- 업데이트: `PhotoKeywordAnalyzerTests` actor 격리 오류 수정 후 `./scripts/build-check.sh test` 통과(`errors: 0`, 2026-02-15).
 
 ### 변경 대상
 - `PhotoCleaner/Sources/Models/AppSettings.swift`
@@ -311,7 +311,7 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 ### 검증
 - 단위 테스트: confidence 필터, 상위 3개 제한, 분석 On/Off
 - 회귀 테스트: 기존 이슈 감지 결과 변화 없음
-- 테스트 실행: `./scripts/build-check.sh test` -> `passed_tests: 149`, `warnings: 1`, `errors: 0` (2026-02-15)
+- 테스트 실행: `./scripts/build-check.sh test` -> 통과(`errors: 0`) (2026-02-15)
 - 수동 확인: `scan` 연동 결과와 키워드 저장 동작은 다음 단계 기능 검증에서 통합 확인.
 
 ### 원칙 준수 게이트 (Phase 4 종료 조건)
@@ -352,8 +352,8 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 
 ### 검증
 - 로케일별 단위 테스트(ko, en) + 미매핑 fallback 테스트
-- 테스트 실행: `./scripts/build-check.sh test` -> `passed_tests: 118`, `errors: 0`, `warnings: 0` (2026-02-15)
-- 최신 검증: `./scripts/build-check.sh test` -> `passed_tests: 118`, `errors: 0`, `warnings: 0` (2026-02-15)
+- 테스트 실행: `./scripts/build-check.sh test` -> 통과(`errors: 0`, `warnings: 0`, `failed_tests: 0`) (2026-02-15)
+- 최신 검증: `./scripts/build-check.sh test` -> 통과(`errors: 0`, `warnings: 0`, `failed_tests: 0`) (2026-02-15)
 
 ### 원칙 준수 게이트 (Phase 5 종료 조건)
 - [x] TDD: 로케일 변환 규칙 테스트를 먼저 작성하고 구현했다.
@@ -374,7 +374,7 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 - 상태: 완료
 - 업데이트: `AllPhotosView` 키워드 칩 필터, `DashboardView` 키워드 요약 카드, `KeywordSummaryCard` 신규 컴포넌트, 필터/네비게이션 연결을 완료.
 - 업데이트: `AppColor` 토큰 미정합으로 인한 빌드 오류를 정리하고 스타일 토큰(`lineSecondary`, `textOnAccent`) 참조를 정정.
-- 업데이트: `./scripts/build-check.sh test` 최신 실행 결과 통과(`errors: 0`, `warnings: 0`, `passed_tests: 118`) (2026-02-15).
+- 업데이트: `./scripts/build-check.sh test` 최신 실행 결과 통과(`errors: 0`, `warnings: 0`, `failed_tests: 0`) (2026-02-15).
 
 ### 변경 대상
 - `PhotoCleaner/Sources/Views/AllPhotos/AllPhotosView.swift`
@@ -399,7 +399,7 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 ### 검증
 - 수동 QA: 필터 선택/해제, 빈 상태, 스캔 중/완료 후 갱신
 - 프리뷰/기본 화면 빌드 확인
- - 최신 자동 검증: `./scripts/build-check.sh test` -> `passed_tests: 118`, `errors: 0`, `warnings: 0` (2026-02-15)
+ - 최신 자동 검증: `./scripts/build-check.sh test` -> 통과(`errors: 0`, `warnings: 0`, `failed_tests: 0`) (2026-02-15)
 
 ### 원칙 준수 게이트 (Phase 6 종료 조건)
 - [x] TDD: 필터/카드 동작 테스트(또는 ViewModel 테스트)를 먼저 작성/통과했다.
@@ -418,7 +418,7 @@ SwiftData 의존을 제거하고 GRDB 단일 저장소 상태를 완료한다.
 
 ### 진행 현황 (2026-02-15)
 - 상태: 완료
-- 업데이트: `SwiftData` 잔존 참조 정리 완료 후, `ScanStatus`를 `PhotoCleaner/Sources/Persistence/ScanStatus.swift`로 복원해 GRDB 컴파일 이슈를 해결했으며, `./scripts/build-check.sh test`에서 `errors: 0`, `warnings: 0`, `passed_tests: 118`을 재확인함.
+- 업데이트: `SwiftData` 잔존 참조 정리 완료 후, `ScanStatus`를 `PhotoCleaner/Sources/Persistence/ScanStatus.swift`로 복원해 GRDB 컴파일 이슈를 해결했으며, `./scripts/build-check.sh test`에서 통과(`errors: 0`, `warnings: 0`, `failed_tests: 0`)를 재확인함.
 
 ### 변경 대상
 - `PhotoCleaner/Sources/SwiftData/*` (삭제 또는 전환용 최소 코드만 유지)
@@ -437,7 +437,7 @@ SwiftData 의존을 제거하고 GRDB 단일 저장소 상태를 완료한다.
 ### 검증
 - `rg -n "ScanStatus" PhotoCleaner`로 누락 타입을 검증하고 정의 위치를 확인 (`PhotoCleaner/Sources/Persistence/ScanStatus.swift`).
 - `rg -n "SwiftData|ModelContainer|@Model" PhotoCleaner PhotoCleanerTests`: 결과 없음(잔존 SwiftData 참조 없음).
-- `./scripts/build-check.sh test` 실행 결과: `errors: 0`, `warnings: 0`, `passed_tests: 118`, `failed_tests: 0`.
+- `./scripts/build-check.sh test` 실행 결과: 통과(`errors: 0`, `warnings: 0`, `failed_tests: 0`).
 
 ### 원칙 준수 게이트 (Phase 7 종료 조건)
 - [x] TDD: 마이그레이션 회귀는 테스트 재실행 및 컴파일/검색 검증으로 확인했다.
