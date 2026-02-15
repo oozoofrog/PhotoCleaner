@@ -158,7 +158,7 @@ struct DashboardView: View {
             await viewModel.startScan()
         }
         .task(id: viewModel.lastScanDate) {
-            let summaries = await viewModel.keywordSummaries(limit: 12)
+            let summaries = await viewModel.keywordSummaries(limit: 10)
             keywordSummaries = summaries
             if let selectedKeywordForFilter,
                !summaries.contains(where: { $0.keyword == selectedKeywordForFilter }) {

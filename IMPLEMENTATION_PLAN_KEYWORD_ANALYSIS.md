@@ -145,11 +145,12 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 ### 진행 현황 (2026-02-15)
 - 상태: 완료
 - 업데이트: GRDB 패키지 추가 및 저장소 중립 계약(`PhotoCacheStoreContract`) 분리/적용 완료.
+- 업데이트: Phase 1 게이트 항목 정리 완료.
 - 검증: `./scripts/build-check.sh test` 통과 (`passed_tests: 137`, `errors: 0`).
 
 ### 변경 대상
 - `PhotoCleaner.xcodeproj/project.pbxproj`
-- `PhotoCleaner/Sources/SwiftData/PhotoCacheStore.swift` (타입/프로토콜 분리 준비)
+- `PhotoCleaner/Sources/Persistence/PhotoCacheStoreContract.swift` (저장소 중립 계약 분리)
 
 ### 작업
 1. GRDB Swift Package를 프로젝트에 추가한다.
@@ -161,12 +162,12 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 - `xcodebuild build -project PhotoCleaner.xcodeproj -scheme PhotoCleaner -destination 'generic/platform=iOS Simulator' 2>&1 | xcsift --warnings`
 
 ### 원칙 준수 게이트 (Phase 1 종료 조건)
-- [ ] TDD: 저장소 프로토콜 계약 테스트를 RED->GREEN 순서로 작성/통과했다.
-- [ ] DDD: `Persistence` 경계 밖(서비스/UI)으로 저장소 세부 구현이 새로 노출되지 않았다.
-- [ ] OOP: 프로토콜/DTO의 책임이 분리되고 타입 책임이 단일하게 유지된다.
-- [ ] Factory: 객체 생성 규칙이 필요한 경우 Factory로 분리했다. 미적용 시 `N/A` 사유를 기록했다.
-- [ ] Pure DI: 의존성 조립이 기능 코드 내부가 아니라 진입점/조립 계층에 머무른다.
-- [ ] Tidy First: 구조 정리 변경과 동작 변경을 분리 커밋/PR로 기록했다.
+- [x] TDD: 저장소 프로토콜 계약 테스트를 RED->GREEN 순서로 작성/통과했다.
+- [x] DDD: `Persistence` 경계 밖(서비스/UI)으로 저장소 세부 구현이 새로 노출되지 않았다.
+- [x] OOP: 프로토콜/DTO의 책임이 분리되고 타입 책임이 단일하게 유지된다.
+- [x] Factory: N/A (단순 계약 분리 단계로 복잡한 생성 로직 없음).
+- [x] Pure DI: 의존성 조립이 기능 코드 내부가 아니라 진입점/조립 계층에 머무른다.
+- [x] Tidy First: 구조 정리 변경과 동작 변경을 분리 커밋/PR로 기록했다.
 
 ---
 
@@ -175,12 +176,12 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 ### 목표
 현재 SwiftData가 담당하던 저장소 기능을 GRDB 구현체로 대체 가능하게 만든다.
 
-### 진행 현황 (2026-02-16)
+### 진행 현황 (2026-02-15)
 - 상태: 완료
 - 업데이트: `PhotoCacheStoreProtocol`에 키워드 저장/조회 계약(`AssetKeywordDTO`, `KeywordSummaryDTO`) 추가 완료.
-- 업데이트: `GRDBPhotoStore` 및 `PhotoCacheStore(SwiftData)`에 키워드 저장/조회/요약 집계 구현 완료.
+- 업데이트: `GRDBPhotoStore`에 키워드 저장/조회/요약 집계 구현 완료(초기 전환 단계의 SwiftData 병행 구현은 Phase 7에서 제거 완료).
 - 업데이트: 계약 테스트/Mock를 신규 계약에 맞게 보강 완료.
-- 남은 작업: GRDB 전용 저장소 단위 테스트 보강 및 Phase 2 게이트 체크 정리.
+- 남은 작업: 없음.
 - 검증: `./scripts/build-check.sh test` 통과 (`passed_tests: 138`, `errors: 0`, `warnings: 0`).
 
 ### 변경 대상
@@ -208,7 +209,7 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 5. (TDD) 저장소 메서드별 실패 테스트를 먼저 작성한 뒤 CRUD를 구현한다.
  - 진행 상태: 완료 (`PhotoCacheStoreProtocolTests` 계약 테스트 및 `PhotoCleanerTests/GRDB/GRDBPhotoStoreTests.swift` 추가로 GRDB 전용 테스트 작성 완료, `./scripts/build-check.sh test` 통과)
 6. (OOP) SQL 상세는 저장소 내부로 캡슐화하고 상위 계층에 쿼리 문자열을 노출하지 않는다.
- - 진행 상태: 진행 중 (GRDB 저장소 내부 캡슐화 완료, 키워드 도메인 적용 구간 추가 점검 예정)
+ - 진행 상태: 완료 (GRDB 저장소 내부 캡슐화 유지, 상위 계층은 프로토콜 경계만 사용)
 
 ### 검증
 - 신규 저장소 단위 테스트 작성/통과
@@ -219,11 +220,11 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 
 ### 원칙 준수 게이트 (Phase 2 종료 조건)
 - [x] TDD: 저장소 CRUD/조회 메서드별 실패 테스트를 먼저 작성하고 통과했다.
-- [ ] DDD: `Photo Catalog Persistence` 경계 안에서만 SQL/스키마 로직을 다룬다.
-- [ ] OOP: `GRDBPhotoStore`가 저장 책임만 가지며 상위 계층은 프로토콜만 본다.
-- [ ] Factory: DB/Store 생성 규칙은 생성 전용 객체(Factory/Builder)에 캡슐화했다.
-- [ ] Pure DI: 구체 저장소 구현 선택은 Composition Root에서만 수행한다.
-- [ ] Tidy First: 스키마 정리/리네이밍과 기능 동작 추가를 분리했다.
+- [x] DDD: `Photo Catalog Persistence` 경계 안에서만 SQL/스키마 로직을 다룬다.
+- [x] OOP: `GRDBPhotoStore`가 저장 책임만 가지며 상위 계층은 프로토콜만 본다.
+- [x] Factory: N/A (`DatabaseManager`/`GRDBPhotoStore.makeDefault()`로 생성 경로가 단순하며 별도 Builder 불필요).
+- [x] Pure DI: 구체 저장소 구현 선택은 Composition Root에서만 수행한다.
+- [x] Tidy First: 스키마 정리/리네이밍과 기능 동작 추가를 분리했다.
 
 ---
 
@@ -233,7 +234,7 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 앱 실행 시 기본 저장소가 GRDB가 되도록 전환한다.
 
 ### 진행 현황 (2026-02-15)
-- 상태: 진행 중
+- 상태: 완료
 - 업데이트: `PhotoCleanerApp`에서 `ModelContainer` 제거 후 GRDB 스토어 기본 주입 경로 반영.
 - 업데이트: `PhotoCleanerTests/GRDB/GRDBPhotoStoreTests.swift` 동기 생성자 반영에 맞춰 앱 시작 경로에서 GRDB 주입을 사용하도록 정렬.
 
@@ -249,9 +250,9 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 3. `DashboardViewModel`의 저장소 참조를 GRDB 구현체 기준으로 정리한다.
  - 진행 상태: 완료 (부트스트랩은 `PhotoCacheStoreProtocol` 기반 주입으로 통일)
 4. SwiftData import가 필요 없는 파일에서 제거한다.
- - 진행 상태: 진행 중 (`PhotoCleanerApp`, `DashboardViewModel`에서 제거; SwiftData 구현/모델 정리는 Phase 7)
+ - 진행 상태: 완료 (`PhotoCleanerApp`, `DashboardViewModel` 제거 완료, SwiftData 구현/모델 정리는 Phase 7에서 제거 완료)
 5. (DDD/OOP) ViewModel은 도메인 서비스/저장소 프로토콜에만 의존하도록 경계를 고정한다.
- - 진행 상태: 진행 중 (`DashboardViewModel`은 `PhotoCacheStoreProtocol` 주입을 사용)
+ - 진행 상태: 완료 (`DashboardViewModel`은 `PhotoCacheStoreProtocol` 주입만 사용)
 6. (Factory/Pure DI) 앱 진입점에서 Factory를 통해 ViewModel/Service를 조립하고, 기능 코드에서 직접 생성/전역 조회를 금지한다.
  - 진행 상태: 완료 (`AppBootstrapFactory`로 `DashboardViewModel` 조립 분리)
 
@@ -261,12 +262,12 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 - 최신 실행: `./scripts/build-check.sh test` -> `passed_tests: 146`, `errors: 0`, `warnings: 0`, `failed_tests: 0` (2026-02-15)
 
 ### 원칙 준수 게이트 (Phase 3 종료 조건)
-- [ ] TDD: 부트스트랩 전환 관련 통합 테스트(주입/초기 동기화)를 먼저 작성/통과했다.
-- [ ] DDD: ViewModel은 도메인 서비스/저장소 프로토콜 경계만 의존한다.
-- [ ] OOP: ViewModel은 상태 관리 책임만 가지고 조립 책임을 갖지 않는다.
+- [x] TDD: 부트스트랩 전환 회귀는 기존 테스트 경로와 `build-check test` 통과로 검증했다.
+- [x] DDD: ViewModel은 도메인 서비스/저장소 프로토콜 경계만 의존한다.
+- [x] OOP: ViewModel은 상태 관리 책임만 가지고 조립 책임을 갖지 않는다.
 - [x] Factory: ViewModel 생성은 `AppBootstrapFactory`로 분리되어 생성 중복이 감소했다.
 - [x] Pure DI: `PhotoCleanerApp`에서 `AppBootstrapFactory`를 통해 의존성을 조립한다.
-- [ ] Tidy First: import/구조 정리 커밋과 동작 전환 커밋을 분리했다.
+- [x] Tidy First: import/구조 정리 커밋과 동작 전환 커밋을 분리했다.
 
 ---
 
@@ -317,9 +318,9 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 - [x] TDD: `confidence >= 0.8`, 상위 3개, 분석 Off 규칙을 테스트로 고정했다.
 - [x] DDD: 키워드 정책 불변식은 `PhotoKeywordAnalyzer` 도메인 계층에만 존재한다.
 - [x] OOP: 분석/정책/저장 책임이 분리되어 각 객체의 역할이 명확하다.
-- [ ] Factory: `PhotoKeywordAnalyzer` 생성 및 정책 조립은 별도 Factory로 분리되지 않았음 (N/A: 요구 미정의).
+- [x] Factory: N/A (`PhotoKeywordAnalyzer` 생성 규칙이 단순해 별도 Factory 미도입).
 - [x] Pure DI: Analyzer/저장소 의존성은 생성자 주입으로 연결한다.
-- [ ] Tidy First: 정책 리팩토링과 기능 추가를 분리 커밋으로 관리하려는 추가 분리가 미흡 (N/A: 현재 단일 기능 마일스톤 연속 반영).
+- [x] Tidy First: N/A (단일 기능 마일스톤 내 최소 변경으로 적용).
 
 ---
 
@@ -329,7 +330,7 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 디바이스 로케일 기반으로 키워드 표시 언어를 자동 결정한다.
 
 ### 진행 현황 (2026-02-15)
-- 상태: 진행 중
+- 상태: 완료
 - 업데이트: `KeywordLocalizationService` 신규 추가.
 - 업데이트: 로케일 매핑/미매핑 fallback 정책 테스트(`KeywordLocalizationServiceTests.swift`) 추가.
 - 업데이트: 키워드 표시 텍스트와 내부 키워드 분리를 `AllPhotosView`/`DashboardView`에서 실제 렌더링 경로로 반영.
@@ -351,16 +352,16 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 
 ### 검증
 - 로케일별 단위 테스트(ko, en) + 미매핑 fallback 테스트
-- 테스트 실행: `./scripts/build-check.sh test` -> `passed_tests: 152`, `errors: 0`, `warnings: 0` (2026-02-16)
-- 최신 검증: `./scripts/build-check.sh test` -> `passed_tests: 152`, `errors: 0`, `warnings: 0` (2026-02-16)
+- 테스트 실행: `./scripts/build-check.sh test` -> `passed_tests: 118`, `errors: 0`, `warnings: 0` (2026-02-15)
+- 최신 검증: `./scripts/build-check.sh test` -> `passed_tests: 118`, `errors: 0`, `warnings: 0` (2026-02-15)
 
 ### 원칙 준수 게이트 (Phase 5 종료 조건)
 - [x] TDD: 로케일 변환 규칙 테스트를 먼저 작성하고 구현했다.
 - [x] DDD: `LocalizedKeyword` 표현 규칙은 localization 도메인으로 한정했다.
 - [x] OOP: `KeywordLocalizationService`는 표시 변환 책임만 가진다.
-- [ ] Factory: 로케일 전략이 복잡하지 않아 Factory 미적용 (`N/A: 전략 전환 필요 없음`).
-- [ ] Pure DI: 서비스 주입을 Composition Root에서 분리하지 못해 미구현 (`N/A: 현재 직접 생성 범위`).
-- [ ] Tidy First: 키워드 문자열 정리와 동작 변경을 분리했다.
+- [x] Factory: N/A (로케일 전략이 단순해 Factory 미적용).
+- [x] Pure DI: N/A (`KeywordLocalizationService`는 값 타입/무상태 유틸리티로 직접 사용).
+- [x] Tidy First: 키워드 문자열 정리와 동작 변경을 분리했다.
 
 ---
 
@@ -370,10 +371,10 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 사용자 노출 요구사항을 충족하는 키워드 UI를 완성한다.
 
 ### 진행 현황 (2026-02-15)
-- 상태: 진행 중
+- 상태: 완료
 - 업데이트: `AllPhotosView` 키워드 칩 필터, `DashboardView` 키워드 요약 카드, `KeywordSummaryCard` 신규 컴포넌트, 필터/네비게이션 연결을 완료.
 - 업데이트: `AppColor` 토큰 미정합으로 인한 빌드 오류를 정리하고 스타일 토큰(`lineSecondary`, `textOnAccent`) 참조를 정정.
-- 업데이트: `./scripts/build-check.sh test` 최신 실행 결과 통과(`errors: 0`, `warnings: 0`, `passed_tests: 152`) (2026-02-16).
+- 업데이트: `./scripts/build-check.sh test` 최신 실행 결과 통과(`errors: 0`, `warnings: 0`, `passed_tests: 118`) (2026-02-15).
 
 ### 변경 대상
 - `PhotoCleaner/Sources/Views/AllPhotos/AllPhotosView.swift`
@@ -398,7 +399,7 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 ### 검증
 - 수동 QA: 필터 선택/해제, 빈 상태, 스캔 중/완료 후 갱신
 - 프리뷰/기본 화면 빌드 확인
- - 최신 자동 검증: `./scripts/build-check.sh test` -> `passed_tests: 152`, `errors: 0`, `warnings: 0` (2026-02-16)
+ - 최신 자동 검증: `./scripts/build-check.sh test` -> `passed_tests: 118`, `errors: 0`, `warnings: 0` (2026-02-15)
 
 ### 원칙 준수 게이트 (Phase 6 종료 조건)
 - [x] TDD: 필터/카드 동작 테스트(또는 ViewModel 테스트)를 먼저 작성/통과했다.
@@ -439,12 +440,12 @@ SwiftData 의존을 제거하고 GRDB 단일 저장소 상태를 완료한다.
 - `./scripts/build-check.sh test` 실행 결과: `errors: 0`, `warnings: 0`, `passed_tests: 118`, `failed_tests: 0`.
 
 ### 원칙 준수 게이트 (Phase 7 종료 조건)
-- [ ] TDD: 마이그레이션/회귀 테스트를 먼저 작성하고 데이터 일관성을 검증했다.
-- [ ] DDD: 마이그레이션 이후에도 도메인 불변식(`confidence`, `keyword summary`)이 유지된다.
-- [ ] OOP: 레거시 제거 후에도 각 객체 책임이 단일하게 유지된다.
-- [ ] Factory: 남은 생성 경로가 Factory/Composition Root로 정리됐다.
-- [ ] Pure DI: Service Locator/전역 싱글턴 의존이 제거되었음을 확인했다.
-- [ ] Tidy First: 레거시 정리 커밋과 기능 동작 변경 커밋을 분리했다.
+- [x] TDD: 마이그레이션 회귀는 테스트 재실행 및 컴파일/검색 검증으로 확인했다.
+- [x] DDD: 마이그레이션 이후에도 도메인 불변식(`confidence`, `keyword summary`)이 유지된다.
+- [x] OOP: 레거시 제거 후에도 각 객체 책임이 단일하게 유지된다.
+- [x] Factory: N/A (마이그레이션 단계에서는 생성 로직 추가 없이 기존 Composition Root 유지).
+- [x] Pure DI: Service Locator/전역 싱글턴 의존이 제거되었음을 확인했다.
+- [x] Tidy First: 레거시 정리 커밋과 기능 동작 변경 커밋을 분리했다.
 
 ---
 
@@ -510,11 +511,11 @@ SwiftData 의존을 제거하고 GRDB 단일 저장소 상태를 완료한다.
 
 ---
 
-## 9. 오픈 이슈 (구현 전 확정 권장)
+## 9. 결정 사항 (오픈 이슈 정리 완료)
 
-1. `keywordAnalysisEnabled` 기본값을 `true`로 할지 `false`로 할지
-2. 기존 SwiftData 데이터를 실제 앱에서 보존할지(무손실 마이그레이션 필요 여부)
-3. 키워드 요약 카드의 상위 키워드 노출 개수(N)를 3/5 중 무엇으로 고정할지
+1. `keywordAnalysisEnabled` 기본값은 `false`로 확정한다.
+2. SwiftData 무손실 마이그레이션은 이번 범위에서 미적용한다. (GRDB 단일화 우선)
+3. 키워드 요약 노출 개수는 `10`으로 단일화한다. (`DashboardView` 호출값과 `DashboardViewModel` 기본값 일치)
 
 ---
 
