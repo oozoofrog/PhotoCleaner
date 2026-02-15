@@ -438,6 +438,7 @@ SwiftData 의존을 제거하고 GRDB 단일 저장소 상태를 완료한다.
 - `rg -n "ScanStatus" PhotoCleaner`로 누락 타입을 검증하고 정의 위치를 확인 (`PhotoCleaner/Sources/Persistence/ScanStatus.swift`).
 - `rg -n "SwiftData|ModelContainer|@Model" PhotoCleaner PhotoCleanerTests`: 결과 없음(잔존 SwiftData 참조 없음).
 - `./scripts/build-check.sh test` 실행 결과: 통과(`errors: 0`, `warnings: 0`, `failed_tests: 0`).
+- 최종 게이트 재실행(2026-02-15): `./scripts/build-check.sh test` -> 통과(`errors: 0`, `warnings: 0`, `failed_tests: 0`).
 
 ### 원칙 준수 게이트 (Phase 7 종료 조건)
 - [x] TDD: 마이그레이션 회귀는 테스트 재실행 및 컴파일/검색 검증으로 확인했다.

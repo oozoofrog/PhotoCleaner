@@ -69,143 +69,8 @@
         },
         {
           "type": "frame",
-          "id": "XHXoV",
+          "id": "OsY2X",
           "name": "Summary Card",
-          "width": "fill_container",
-          "fill": "#FFFFFF",
-          "cornerRadius": 12,
-          "layout": "vertical",
-          "gap": 8,
-          "padding": 16,
-          "children": [
-            {
-              "type": "text",
-              "id": "5Ft8S",
-              "name": "summaryTitleA",
-              "fill": "#111827",
-              "content": "Summary",
-              "fontFamily": "Inter",
-              "fontSize": 16,
-              "fontWeight": "600"
-            },
-            {
-              "type": "text",
-              "id": "HtDRK",
-              "name": "summaryStatsA",
-              "fill": "#374151",
-              "content": "totalPhotos: 0 | totalIssues: 0 | lastScanDate: -",
-              "fontFamily": "Inter",
-              "fontSize": 12,
-              "fontWeight": "normal"
-            },
-            {
-              "type": "frame",
-              "id": "HuzIo",
-              "name": "Summary Action Row Top",
-              "width": "fill_container",
-              "gap": 8,
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "HMxXD",
-                  "name": "Scan Button",
-                  "width": "fill_container",
-                  "fill": "#2563EB",
-                  "cornerRadius": 10,
-                  "padding": 10,
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "Qi4jT",
-                      "name": "scanTxtB",
-                      "fill": "#FFFFFF",
-                      "content": "스캔 시작",
-                      "fontFamily": "Inter",
-                      "fontSize": 12,
-                      "fontWeight": "600"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "2skt4",
-                  "name": "Cancel Button",
-                  "width": "fill_container",
-                  "fill": "#E5E7EB",
-                  "cornerRadius": 10,
-                  "padding": 10,
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "P8Cpq",
-                      "name": "cancelTxtB",
-                      "fill": "#374151",
-                      "content": "취소",
-                      "fontFamily": "Inter",
-                      "fontSize": 12,
-                      "fontWeight": "600"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "yGVE8",
-              "name": "Summary Action Row Bottom",
-              "width": "fill_container",
-              "gap": 8,
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "6wAMU",
-                  "name": "View All Photos Button",
-                  "width": "fill_container",
-                  "fill": "#0F766E",
-                  "cornerRadius": 10,
-                  "padding": 10,
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "JS0LY",
-                      "name": "allPhotosTxtB",
-                      "fill": "#FFFFFF",
-                      "content": "전체 사진",
-                      "fontFamily": "Inter",
-                      "fontSize": 12,
-                      "fontWeight": "600"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "sC8XH",
-                  "name": "Scan Duplicates Button",
-                  "width": "fill_container",
-                  "fill": "#374151",
-                  "cornerRadius": 10,
-                  "padding": 10,
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "xZtpu",
-                      "name": "dupScanTxtB",
-                      "fill": "#FFFFFF",
-                      "content": "중복 스캔",
-                      "fontFamily": "Inter",
-                      "fontSize": 12,
-                      "fontWeight": "600"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "8Uzh5",
-          "name": "Keyword Summary Card",
           "width": "fill_container",
           "fill": "#FFFFFF",
           "cornerRadius": 12,
@@ -215,82 +80,319 @@
           "children": [
             {
               "type": "text",
-              "id": "FsKIi",
-              "name": "keywordTitleA",
-              "fill": "#111827",
-              "content": "Keyword Summary",
+              "id": "8IN22",
+              "name": "Summary Title",
+              "fill": "#6B7280",
+              "content": "전체 요약",
               "fontFamily": "Inter",
-              "fontSize": 16,
-              "fontWeight": "600"
+              "fontSize": 12,
+              "fontWeight": "500"
             },
             {
               "type": "frame",
-              "id": "jRrNr",
+              "id": "Wemda",
+              "name": "Summary Headline Row",
+              "width": "fill_container",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "WqGQa",
+                  "name": "Headline",
+                  "fill": "#111827",
+                  "content": "12장 중 3장에 문제 발견",
+                  "fontFamily": "Inter",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "O6J1P",
+                  "name": "Chevron",
+                  "fill": "#9CA3AF",
+                  "content": ">",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "5fENK",
+              "name": "Last Scan",
+              "fill": "#6B7280",
+              "content": "마지막 검사: 2026-02-15 14:20",
+              "fontFamily": "Inter",
+              "fontSize": 12
+            },
+            {
+              "type": "frame",
+              "id": "i9AZ4",
+              "name": "Scanning Progress (State)",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "9wk5T",
+                  "name": "Progress Track",
+                  "width": "fill_container",
+                  "height": 6,
+                  "fill": "#E5E7EB",
+                  "cornerRadius": 4
+                },
+                {
+                  "type": "frame",
+                  "id": "PUori",
+                  "name": "Progress Fill",
+                  "width": 170,
+                  "height": 6,
+                  "fill": "#2563EB",
+                  "cornerRadius": 4
+                },
+                {
+                  "type": "text",
+                  "id": "xaWnf",
+                  "name": "Progress Text",
+                  "fill": "#2563EB",
+                  "content": "검사 중... 42%",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "Qzvfq",
+              "name": "Issue Count",
+              "fill": "#DC2626",
+              "content": "3",
+              "fontFamily": "Inter",
+              "fontSize": 28,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "5ftW8",
+              "name": "Primary Scan Button",
+              "width": "fill_container",
+              "height": 40,
+              "fill": "#2563EB",
+              "cornerRadius": 10,
+              "padding": 10,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "dvCvb",
+                  "name": "Primary Scan Label",
+                  "fill": "#FFFFFF",
+                  "content": "다시 검사하기",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "T9Oay",
+              "name": "Duplicate Scan Button",
+              "width": "fill_container",
+              "height": 40,
+              "fill": "#E5E7EB",
+              "cornerRadius": 10,
+              "padding": 10,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "JHslX",
+                  "name": "Duplicate Scan Label",
+                  "fill": "#111827",
+                  "content": "중복 사진 찾기",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "1PA3d",
+          "name": "Keyword Summary Card",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 12,
+          "layout": "vertical",
+          "gap": 10,
+          "padding": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "xlTSn",
+              "name": "Keyword Header Row",
+              "width": "fill_container",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "5gBKk",
+                  "name": "Keyword Header Text",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "PYkIF",
+                      "name": "Keyword Title",
+                      "fill": "#111827",
+                      "content": "키워드 요약",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "v2Zkd",
+                      "name": "Keyword Description",
+                      "fill": "#6B7280",
+                      "content": "탭으로 해당 키워드 사진을 확인할 수 있습니다.",
+                      "fontFamily": "Inter",
+                      "fontSize": 12
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "hk5vI",
+                  "name": "Keyword Header Spacer",
+                  "width": "fill_container",
+                  "height": 1
+                },
+                {
+                  "type": "text",
+                  "id": "qi3OA",
+                  "name": "Reset Action",
+                  "fill": "#2563EB",
+                  "content": "초기화",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "rrktp",
+              "name": "Keyword Updating Row",
+              "width": "fill_container",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "6cRIr",
+                  "name": "Updating Dot",
+                  "width": 8,
+                  "height": 8,
+                  "fill": "#2563EB",
+                  "cornerRadius": 4
+                },
+                {
+                  "type": "text",
+                  "id": "2UL0p",
+                  "name": "Updating Text",
+                  "fill": "#6B7280",
+                  "content": "키워드 요약 갱신 중",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "YYKJX",
               "name": "Keyword Chip Row",
               "width": "fill_container",
               "gap": 8,
               "children": [
                 {
                   "type": "frame",
-                  "id": "t8Z1q",
-                  "name": "Keyword Chip Cat",
-                  "fill": "#EEF2FF",
-                  "cornerRadius": 999,
+                  "id": "vsxV9",
+                  "name": "Keyword Chip Selected",
+                  "height": 32,
+                  "fill": "#2563EB",
+                  "cornerRadius": 16,
                   "padding": 8,
                   "children": [
                     {
                       "type": "text",
-                      "id": "pFeiW",
-                      "name": "chipCatTxtB",
-                      "fill": "#3730A3",
-                      "content": "#cat (12)",
+                      "id": "iY3Z6",
+                      "name": "Keyword Chip Selected Text",
+                      "fill": "#FFFFFF",
+                      "content": "고양이 (12)",
                       "fontFamily": "Inter",
-                      "fontSize": 11,
-                      "fontWeight": "600"
+                      "fontSize": 12,
+                      "fontWeight": "500"
                     }
                   ]
                 },
                 {
                   "type": "frame",
-                  "id": "Ez3TV",
-                  "name": "Keyword Chip Dog",
-                  "fill": "#ECFDF5",
-                  "cornerRadius": 999,
+                  "id": "J0mFj",
+                  "name": "Keyword Chip 2",
+                  "height": 32,
+                  "fill": "#E5E7EB",
+                  "cornerRadius": 16,
                   "padding": 8,
                   "children": [
                     {
                       "type": "text",
-                      "id": "gKWnN",
-                      "name": "chipDogTxtB",
-                      "fill": "#065F46",
-                      "content": "#dog (9)",
+                      "id": "zPQkt",
+                      "name": "Keyword Chip 2 Text",
+                      "fill": "#111827",
+                      "content": "바다 (7)",
                       "fontFamily": "Inter",
-                      "fontSize": 11,
-                      "fontWeight": "600"
+                      "fontSize": 12,
+                      "fontWeight": "500"
                     }
                   ]
                 },
                 {
                   "type": "frame",
-                  "id": "yscHv",
-                  "name": "Keyword Chip Beach",
-                  "fill": "#FFF7ED",
-                  "cornerRadius": 999,
+                  "id": "TgWhd",
+                  "name": "Keyword Chip 3",
+                  "height": 32,
+                  "fill": "#E5E7EB",
+                  "cornerRadius": 16,
                   "padding": 8,
                   "children": [
                     {
                       "type": "text",
-                      "id": "JAj7Z",
-                      "name": "chipBeachTxtB",
-                      "fill": "#9A3412",
-                      "content": "#beach (7)",
+                      "id": "jZ2gV",
+                      "name": "Keyword Chip 3 Text",
+                      "fill": "#111827",
+                      "content": "강아지 (4)",
                       "fontFamily": "Inter",
-                      "fontSize": 11,
-                      "fontWeight": "600"
+                      "fontSize": 12,
+                      "fontWeight": "500"
                     }
                   ]
                 }
               ]
+            },
+            {
+              "type": "text",
+              "id": "wVb8t",
+              "name": "Keyword Empty Hint",
+              "fill": "#9CA3AF",
+              "content": "키워드 분석 결과가 없습니다. (빈 상태)",
+              "fontFamily": "Inter",
+              "fontSize": 12
             }
           ]
         },
@@ -321,87 +423,137 @@
               "children": [
                 {
                   "type": "frame",
-                  "id": "XEWXh",
-                  "name": "issueCard1A",
+                  "id": "kbGHy",
+                  "name": "Issue Card - Download Failed",
                   "width": "fill_container",
                   "fill": "#FFFFFF",
                   "cornerRadius": 12,
                   "layout": "vertical",
-                  "gap": 4,
+                  "gap": 6,
                   "padding": 12,
                   "children": [
                     {
+                      "type": "frame",
+                      "id": "iadik",
+                      "name": "Top Row",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "emrPw",
+                          "name": "Icon",
+                          "fill": "#D97706",
+                          "content": "exclamationmark.icloud",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "8EvU5",
+                          "name": "Spacer",
+                          "width": "fill_container",
+                          "height": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "tCDnb",
+                          "name": "Count",
+                          "fill": "#D97706",
+                          "content": "0",
+                          "fontFamily": "Inter",
+                          "fontSize": 18,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
                       "type": "text",
-                      "id": "jJbhv",
-                      "name": "issueCard1LabelA",
-                      "fill": "#374151",
+                      "id": "PxclT",
+                      "name": "Issue Name",
+                      "fill": "#111827",
                       "content": "다운로드 실패",
                       "fontFamily": "Inter",
-                      "fontSize": 12,
-                      "fontWeight": "normal"
+                      "fontSize": 13,
+                      "fontWeight": "600"
                     },
                     {
                       "type": "text",
-                      "id": "0OmbK",
-                      "name": "issueCount1C",
-                      "fill": "#111827",
-                      "content": "0장",
-                      "fontFamily": "Inter",
-                      "fontSize": 20,
-                      "fontWeight": "700"
-                    },
-                    {
-                      "type": "text",
-                      "id": "pVuF6",
-                      "name": "issueMeta1C",
+                      "id": "lwpCv",
+                      "name": "Issue Status",
                       "fill": "#6B7280",
-                      "content": "탭해서 상세보기",
+                      "content": "문제 없음",
                       "fontFamily": "Inter",
-                      "fontSize": 11,
-                      "fontWeight": "normal"
+                      "fontSize": 12
                     }
                   ]
                 },
                 {
                   "type": "frame",
-                  "id": "Rz3cr",
-                  "name": "issueCard2A",
+                  "id": "O2q0S",
+                  "name": "Issue Card - Corrupted",
                   "width": "fill_container",
                   "fill": "#FFFFFF",
                   "cornerRadius": 12,
                   "layout": "vertical",
-                  "gap": 4,
+                  "gap": 6,
                   "padding": 12,
                   "children": [
                     {
-                      "type": "text",
-                      "id": "Zv6Dn",
-                      "name": "issueCard2LabelA",
-                      "fill": "#374151",
-                      "content": "손상 파일",
-                      "fontFamily": "Inter",
-                      "fontSize": 12,
-                      "fontWeight": "normal"
+                      "type": "frame",
+                      "id": "qml6I",
+                      "name": "Top Row",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "vHhhT",
+                          "name": "Icon",
+                          "fill": "#DC2626",
+                          "content": "exclamationmark.triangle",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "sbNyF",
+                          "name": "Spacer",
+                          "width": "fill_container",
+                          "height": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "6D1RQ",
+                          "name": "Count",
+                          "fill": "#DC2626",
+                          "content": "0",
+                          "fontFamily": "Inter",
+                          "fontSize": 18,
+                          "fontWeight": "600"
+                        }
+                      ]
                     },
                     {
                       "type": "text",
-                      "id": "9CjNk",
-                      "name": "issueCount2C",
+                      "id": "iRr93",
+                      "name": "Issue Name",
                       "fill": "#111827",
-                      "content": "0장",
+                      "content": "손상됨",
                       "fontFamily": "Inter",
-                      "fontSize": 20,
-                      "fontWeight": "700"
+                      "fontSize": 13,
+                      "fontWeight": "600"
                     },
                     {
                       "type": "text",
-                      "id": "0a5Wj",
-                      "name": "issueMeta2C",
+                      "id": "ISmA6",
+                      "name": "Issue Status",
                       "fill": "#6B7280",
-                      "content": "탭해서 상세보기",
+                      "content": "문제 없음",
                       "fontFamily": "Inter",
-                      "fontSize": 11,
-                      "fontWeight": "normal"
+                      "fontSize": 12
                     }
                   ]
                 }
@@ -416,87 +568,137 @@
               "children": [
                 {
                   "type": "frame",
-                  "id": "YfKE6",
-                  "name": "issueCard3A",
+                  "id": "InctS",
+                  "name": "Issue Card - Screenshot",
                   "width": "fill_container",
                   "fill": "#FFFFFF",
                   "cornerRadius": 12,
                   "layout": "vertical",
-                  "gap": 4,
+                  "gap": 6,
                   "padding": 12,
                   "children": [
                     {
+                      "type": "frame",
+                      "id": "eu0B0",
+                      "name": "Top Row",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "FggOP",
+                          "name": "Icon",
+                          "fill": "#2563EB",
+                          "content": "rectangle.on.rectangle",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Hgfnn",
+                          "name": "Spacer",
+                          "width": "fill_container",
+                          "height": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "Sy5aU",
+                          "name": "Count",
+                          "fill": "#2563EB",
+                          "content": "0",
+                          "fontFamily": "Inter",
+                          "fontSize": 18,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
                       "type": "text",
-                      "id": "f4UUD",
-                      "name": "issueCard3LabelA",
-                      "fill": "#374151",
+                      "id": "w5lsA",
+                      "name": "Issue Name",
+                      "fill": "#111827",
                       "content": "스크린샷",
                       "fontFamily": "Inter",
-                      "fontSize": 12,
-                      "fontWeight": "normal"
+                      "fontSize": 13,
+                      "fontWeight": "600"
                     },
                     {
                       "type": "text",
-                      "id": "o1qws",
-                      "name": "issueCount3C",
-                      "fill": "#111827",
-                      "content": "0장",
-                      "fontFamily": "Inter",
-                      "fontSize": 20,
-                      "fontWeight": "700"
-                    },
-                    {
-                      "type": "text",
-                      "id": "HSbV0",
-                      "name": "issueMeta3C",
+                      "id": "euErI",
+                      "name": "Issue Status",
                       "fill": "#6B7280",
-                      "content": "탭해서 상세보기",
+                      "content": "문제 없음",
                       "fontFamily": "Inter",
-                      "fontSize": 11,
-                      "fontWeight": "normal"
+                      "fontSize": 12
                     }
                   ]
                 },
                 {
                   "type": "frame",
-                  "id": "yZvcV",
-                  "name": "issueCard4A",
+                  "id": "EVX06",
+                  "name": "Issue Card - Large File",
                   "width": "fill_container",
                   "fill": "#FFFFFF",
                   "cornerRadius": 12,
                   "layout": "vertical",
-                  "gap": 4,
+                  "gap": 6,
                   "padding": 12,
                   "children": [
                     {
+                      "type": "frame",
+                      "id": "Cwn6P",
+                      "name": "Top Row",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "JXkdJ",
+                          "name": "Icon",
+                          "fill": "#0F766E",
+                          "content": "externaldrive",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "wYVIn",
+                          "name": "Spacer",
+                          "width": "fill_container",
+                          "height": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "QcnPV",
+                          "name": "Count",
+                          "fill": "#0F766E",
+                          "content": "0",
+                          "fontFamily": "Inter",
+                          "fontSize": 18,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
                       "type": "text",
-                      "id": "xMZJb",
-                      "name": "issueCard4LabelA",
-                      "fill": "#374151",
+                      "id": "kB9vR",
+                      "name": "Issue Name",
+                      "fill": "#111827",
                       "content": "대용량",
                       "fontFamily": "Inter",
-                      "fontSize": 12,
-                      "fontWeight": "normal"
+                      "fontSize": 13,
+                      "fontWeight": "600"
                     },
                     {
                       "type": "text",
-                      "id": "qqRwg",
-                      "name": "issueCount4C",
-                      "fill": "#111827",
-                      "content": "0장",
-                      "fontFamily": "Inter",
-                      "fontSize": 20,
-                      "fontWeight": "700"
-                    },
-                    {
-                      "type": "text",
-                      "id": "YPB8x",
-                      "name": "issueMeta4C",
+                      "id": "zESNH",
+                      "name": "Issue Status",
                       "fill": "#6B7280",
-                      "content": "탭해서 상세보기",
+                      "content": "문제 없음",
                       "fontFamily": "Inter",
-                      "fontSize": 11,
-                      "fontWeight": "normal"
+                      "fontSize": 12
                     }
                   ]
                 }
@@ -524,8 +726,8 @@
             },
             {
               "type": "frame",
-              "id": "DcJxK",
-              "name": "dupCardA",
+              "id": "IZebM",
+              "name": "Duplicate Card",
               "width": "fill_container",
               "fill": "#FFFFFF",
               "cornerRadius": 12,
@@ -535,43 +737,68 @@
               "children": [
                 {
                   "type": "frame",
-                  "id": "FitVS",
-                  "name": "Duplicate Metrics",
+                  "id": "ZKHn3",
+                  "name": "Duplicate Top Row",
                   "width": "fill_container",
-                  "layout": "vertical",
-                  "gap": 4,
+                  "gap": 8,
                   "children": [
                     {
                       "type": "text",
-                      "id": "vM5Zd",
-                      "name": "dupLine1C",
-                      "fill": "#374151",
-                      "content": "groupCount: 0",
+                      "id": "GhJBH",
+                      "name": "Icon",
+                      "fill": "#2563EB",
+                      "content": "square.on.square",
                       "fontFamily": "Inter",
-                      "fontSize": 12,
-                      "fontWeight": "normal"
+                      "fontSize": 11,
+                      "fontWeight": "600"
                     },
                     {
                       "type": "text",
-                      "id": "aDTJA",
-                      "name": "dupLine2C",
-                      "fill": "#374151",
-                      "content": "duplicateCount: 0",
+                      "id": "SQZg8",
+                      "name": "Group Text",
+                      "fill": "#111827",
+                      "content": "중복 그룹 0개",
                       "fontFamily": "Inter",
-                      "fontSize": 12,
-                      "fontWeight": "normal"
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "OuhtL",
+                      "name": "Spacer",
+                      "width": "fill_container",
+                      "height": 1
                     },
                     {
                       "type": "text",
-                      "id": "F87iK",
-                      "name": "dupLine3C",
-                      "fill": "#374151",
-                      "content": "potentialSavings: 0 MB",
+                      "id": "i361U",
+                      "name": "Chevron",
+                      "fill": "#9CA3AF",
+                      "content": ">",
                       "fontFamily": "Inter",
-                      "fontSize": 12,
-                      "fontWeight": "normal"
+                      "fontSize": 14,
+                      "fontWeight": "500"
                     }
                   ]
+                },
+                {
+                  "type": "text",
+                  "id": "HLHi8",
+                  "name": "Duplicate Detail",
+                  "fill": "#6B7280",
+                  "content": "0장 정리 시 0 MB 확보",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "wAXba",
+                  "name": "Duplicate Hint",
+                  "fill": "#9CA3AF",
+                  "content": "탭하여 상세 보기",
+                  "fontFamily": "Inter",
+                  "fontSize": 12
                 }
               ]
             }
@@ -1066,30 +1293,138 @@
               "children": [
                 {
                   "type": "frame",
-                  "id": "W2jG3",
+                  "id": "TB8xL",
                   "name": "Photo 1 Selected",
                   "width": "fill_container",
                   "height": "fill_container",
                   "fill": "#93C5FD",
-                  "cornerRadius": 10
+                  "cornerRadius": 10,
+                  "layout": "vertical",
+                  "padding": 6,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "lpNX4",
+                      "name": "Badge Row",
+                      "width": "fill_container",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "BAxEt",
+                          "name": "Spacer",
+                          "width": "fill_container",
+                          "height": 1
+                        },
+                        {
+                          "type": "frame",
+                          "id": "KqCQW",
+                          "name": "Selected Badge",
+                          "width": 18,
+                          "height": 18,
+                          "fill": "#FFFFFF",
+                          "cornerRadius": 9,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "LzWib",
+                              "name": "Selected Check",
+                              "fill": "#2563EB",
+                              "content": "✓",
+                              "fontFamily": "Inter",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
                 },
                 {
                   "type": "frame",
-                  "id": "dgR02",
+                  "id": "4hjvB",
                   "name": "Photo 2",
                   "width": "fill_container",
                   "height": "fill_container",
                   "fill": "#D9E4F5",
-                  "cornerRadius": 10
+                  "cornerRadius": 10,
+                  "layout": "vertical",
+                  "padding": 6,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "QZdkB",
+                      "name": "Badge Row",
+                      "width": "fill_container",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "x8lCg",
+                          "name": "Spacer",
+                          "width": "fill_container",
+                          "height": 1
+                        },
+                        {
+                          "type": "frame",
+                          "id": "5Tgyo",
+                          "name": "Unselected Badge",
+                          "width": 18,
+                          "height": 18,
+                          "fill": "#94A3B8",
+                          "cornerRadius": 9
+                        }
+                      ]
+                    }
+                  ]
                 },
                 {
                   "type": "frame",
-                  "id": "hqXZW",
+                  "id": "pxPnA",
                   "name": "Photo 3 Selected",
                   "width": "fill_container",
                   "height": "fill_container",
                   "fill": "#93C5FD",
-                  "cornerRadius": 10
+                  "cornerRadius": 10,
+                  "layout": "vertical",
+                  "padding": 6,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "L5Axe",
+                      "name": "Badge Row",
+                      "width": "fill_container",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "O8igB",
+                          "name": "Spacer",
+                          "width": "fill_container",
+                          "height": 1
+                        },
+                        {
+                          "type": "frame",
+                          "id": "JcJe2",
+                          "name": "Selected Badge",
+                          "width": 18,
+                          "height": 18,
+                          "fill": "#FFFFFF",
+                          "cornerRadius": 9,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "p4s7z",
+                              "name": "Selected Check",
+                              "fill": "#2563EB",
+                              "content": "✓",
+                              "fontFamily": "Inter",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             },
@@ -1103,30 +1438,126 @@
               "children": [
                 {
                   "type": "frame",
-                  "id": "IH1L1",
+                  "id": "gObTc",
                   "name": "Photo 4",
                   "width": "fill_container",
                   "height": "fill_container",
                   "fill": "#D7E8D6",
-                  "cornerRadius": 10
+                  "cornerRadius": 10,
+                  "layout": "vertical",
+                  "padding": 6,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "4lgcf",
+                      "name": "Badge Row",
+                      "width": "fill_container",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "NBPLf",
+                          "name": "Spacer",
+                          "width": "fill_container",
+                          "height": 1
+                        },
+                        {
+                          "type": "frame",
+                          "id": "55vRi",
+                          "name": "Unselected Badge",
+                          "width": 18,
+                          "height": 18,
+                          "fill": "#94A3B8",
+                          "cornerRadius": 9
+                        }
+                      ]
+                    }
+                  ]
                 },
                 {
                   "type": "frame",
-                  "id": "ELZV2",
+                  "id": "sKnDf",
                   "name": "Photo 5 Selected",
                   "width": "fill_container",
                   "height": "fill_container",
                   "fill": "#93C5FD",
-                  "cornerRadius": 10
+                  "cornerRadius": 10,
+                  "layout": "vertical",
+                  "padding": 6,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "h0N1b",
+                      "name": "Badge Row",
+                      "width": "fill_container",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "C1bXh",
+                          "name": "Spacer",
+                          "width": "fill_container",
+                          "height": 1
+                        },
+                        {
+                          "type": "frame",
+                          "id": "447fC",
+                          "name": "Selected Badge",
+                          "width": 18,
+                          "height": 18,
+                          "fill": "#FFFFFF",
+                          "cornerRadius": 9,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "S0Erb",
+                              "name": "Selected Check",
+                              "fill": "#2563EB",
+                              "content": "✓",
+                              "fontFamily": "Inter",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
                 },
                 {
                   "type": "frame",
-                  "id": "wMEYr",
+                  "id": "Hsfqt",
                   "name": "Photo 6",
                   "width": "fill_container",
                   "height": "fill_container",
                   "fill": "#CCD8EE",
-                  "cornerRadius": 10
+                  "cornerRadius": 10,
+                  "layout": "vertical",
+                  "padding": 6,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "7b7dI",
+                      "name": "Badge Row",
+                      "width": "fill_container",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "UxLiM",
+                          "name": "Spacer",
+                          "width": "fill_container",
+                          "height": 1
+                        },
+                        {
+                          "type": "frame",
+                          "id": "SKHT2",
+                          "name": "Unselected Badge",
+                          "width": 18,
+                          "height": 18,
+                          "fill": "#94A3B8",
+                          "cornerRadius": 9
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }
@@ -1414,6 +1845,996 @@
               "fontSize": 16
             }
           ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "o9QIY",
+      "x": 2150,
+      "y": 0,
+      "name": "Keyword Album - Entry",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "#F5F7FA",
+      "layout": "vertical",
+      "gap": 12,
+      "padding": 16,
+      "children": [
+        {
+          "type": "frame",
+          "id": "A34ye",
+          "name": "Navigation Bar",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "#FFFFFF",
+          "cornerRadius": 12,
+          "gap": 8,
+          "padding": 12,
+          "children": [
+            {
+              "type": "text",
+              "id": "nnOzM",
+              "name": "Back",
+              "fill": "#111827",
+              "content": "<",
+              "fontFamily": "Inter",
+              "fontSize": 18,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "HcusZ",
+              "name": "Title",
+              "fill": "#111827",
+              "content": "키워드 앨범",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "H1Mlp",
+              "name": "Spacer",
+              "width": "fill_container",
+              "height": 1
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "LYIYs",
+          "name": "Intro Card",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 12,
+          "layout": "vertical",
+          "gap": 6,
+          "padding": 12,
+          "children": [
+            {
+              "type": "text",
+              "id": "Dw01F",
+              "name": "Intro Title",
+              "fill": "#111827",
+              "content": "키워드로 앨범을 빠르게 생성",
+              "fontFamily": "Inter",
+              "fontSize": 16,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "g0MRg",
+              "name": "Intro Description",
+              "fill": "#6B7280",
+              "content": "키워드 선택 후 '앨범 만들기'를 누르면 필터된 사진으로 새 앨범을 만듭니다.",
+              "fontFamily": "Inter",
+              "fontSize": 13
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "UWUWd",
+          "name": "Keyword Selection Card",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 12,
+          "layout": "vertical",
+          "gap": 10,
+          "padding": 12,
+          "children": [
+            {
+              "type": "text",
+              "id": "PkGa0",
+              "name": "Keyword Title",
+              "fill": "#111827",
+              "content": "키워드 선택",
+              "fontFamily": "Inter",
+              "fontSize": 15,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "6VQON",
+              "name": "Keyword Chip Row",
+              "width": "fill_container",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "3CdV5",
+                  "name": "Cat Selected",
+                  "height": 32,
+                  "fill": "#3B82F6",
+                  "cornerRadius": 16,
+                  "padding": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "wcMDM",
+                      "name": "Cat Selected Text",
+                      "fill": "#FFFFFF",
+                      "content": "고양이 (12)",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "rpLlC",
+                  "name": "Sea",
+                  "height": 32,
+                  "fill": "#E5E7EB",
+                  "cornerRadius": 16,
+                  "padding": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Toaw6",
+                      "name": "Sea Text",
+                      "fill": "#111827",
+                      "content": "바다 (7)",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "yo8pB",
+              "name": "Action Row",
+              "width": "fill_container",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "rEhn6",
+                  "name": "Filter Button",
+                  "width": "fill_container",
+                  "height": 40,
+                  "fill": "#E5E7EB",
+                  "cornerRadius": 10,
+                  "padding": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "6yPHT",
+                      "name": "Filter Button Text",
+                      "fill": "#111827",
+                      "content": "필터로 보기",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "MeqFB",
+                  "name": "Create Album Button",
+                  "width": "fill_container",
+                  "height": 40,
+                  "fill": "#2563EB",
+                  "cornerRadius": 10,
+                  "padding": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ovuRj",
+                      "name": "Create Album Button Text",
+                      "fill": "#FFFFFF",
+                      "content": "앨범 만들기",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Fdrc0",
+          "name": "Album Preview Card",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 12,
+          "layout": "vertical",
+          "gap": 6,
+          "padding": 12,
+          "children": [
+            {
+              "type": "text",
+              "id": "Uggus",
+              "name": "Preview Title",
+              "fill": "#111827",
+              "content": "생성 예정 앨범",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "Xl2rQ",
+              "name": "Preview Description",
+              "fill": "#374151",
+              "content": "앨범명: 고양이 모음",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "500"
+            },
+            {
+              "type": "text",
+              "id": "5g2Sg",
+              "name": "Preview Meta",
+              "fill": "#6B7280",
+              "content": "예상 포함 사진: 12장",
+              "fontFamily": "Inter",
+              "fontSize": 13
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "YcI62",
+      "x": 2580,
+      "y": 0,
+      "name": "Keyword Album - Create",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "#F5F7FA",
+      "layout": "vertical",
+      "gap": 12,
+      "padding": 16,
+      "children": [
+        {
+          "type": "frame",
+          "id": "aEVCh",
+          "name": "Navigation Bar",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "#FFFFFF",
+          "cornerRadius": 12,
+          "gap": 8,
+          "padding": 12,
+          "children": [
+            {
+              "type": "text",
+              "id": "pi55f",
+              "name": "Back",
+              "fill": "#111827",
+              "content": "<",
+              "fontFamily": "Inter",
+              "fontSize": 18,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "UBwWE",
+              "name": "Title",
+              "fill": "#111827",
+              "content": "앨범 생성",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "oG3hW",
+              "name": "Spacer",
+              "width": "fill_container",
+              "height": 1
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Do90A",
+          "name": "Selected Keyword Card",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 12,
+          "layout": "vertical",
+          "gap": 8,
+          "padding": 12,
+          "children": [
+            {
+              "type": "text",
+              "id": "m9wdX",
+              "name": "Selected Keyword Label",
+              "fill": "#6B7280",
+              "content": "선택된 키워드",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "500"
+            },
+            {
+              "type": "frame",
+              "id": "ceaq6",
+              "name": "Selected Keyword Chip",
+              "height": 32,
+              "fill": "#3B82F6",
+              "cornerRadius": 16,
+              "padding": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "gN8v4",
+                  "name": "Selected Keyword Chip Text",
+                  "fill": "#FFFFFF",
+                  "content": "고양이 (12)",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "121Ns",
+          "name": "Album Form Card",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 12,
+          "layout": "vertical",
+          "gap": 10,
+          "padding": 12,
+          "children": [
+            {
+              "type": "text",
+              "id": "1fu6z",
+              "name": "Album Name Label",
+              "fill": "#374151",
+              "content": "앨범 이름",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "500"
+            },
+            {
+              "type": "frame",
+              "id": "nrxA3",
+              "name": "Album Name Input",
+              "width": "fill_container",
+              "height": 40,
+              "fill": "#F3F4F6",
+              "cornerRadius": 10,
+              "padding": 10,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "CIrb2",
+                  "name": "Album Name Value",
+                  "fill": "#111827",
+                  "content": "고양이 모음",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "aI70m",
+              "name": "Photo Count Label",
+              "fill": "#374151",
+              "content": "포함될 사진",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "500"
+            },
+            {
+              "type": "text",
+              "id": "RgNNh",
+              "name": "Photo Count Value",
+              "fill": "#111827",
+              "content": "12장",
+              "fontFamily": "Inter",
+              "fontSize": 15,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "RdT1C",
+              "name": "Option Row",
+              "width": "fill_container",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "AQpyk",
+                  "name": "Option Label",
+                  "fill": "#374151",
+                  "content": "중복 사진 제외",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "ZXAQv",
+                  "name": "Toggle Track",
+                  "width": 40,
+                  "height": 22,
+                  "fill": "#60A5FA",
+                  "cornerRadius": 11,
+                  "padding": 2,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "E6JQZ",
+                      "name": "Toggle Knob",
+                      "width": 18,
+                      "height": 18,
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 9
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "hjV8u",
+          "name": "Bottom Action Row",
+          "width": "fill_container",
+          "gap": 8,
+          "children": [
+            {
+              "type": "frame",
+              "id": "APZpA",
+              "name": "Cancel Button",
+              "width": "fill_container",
+              "height": 44,
+              "fill": "#E5E7EB",
+              "cornerRadius": 10,
+              "padding": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ONWRX",
+                  "name": "Cancel Button Text",
+                  "fill": "#111827",
+                  "content": "취소",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "QHyj6",
+              "name": "Confirm Button",
+              "width": "fill_container",
+              "height": 44,
+              "fill": "#2563EB",
+              "cornerRadius": 10,
+              "padding": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "gy7AG",
+                  "name": "Confirm Button Text",
+                  "fill": "#FFFFFF",
+                  "content": "생성",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "KUk9R",
+          "name": "Hint",
+          "fill": "#6B7280",
+          "content": "* 생성 후 전체 사진 화면에서 바로 확인할 수 있습니다.",
+          "fontFamily": "Inter",
+          "fontSize": 12
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "3gkdB",
+      "x": 3010,
+      "y": 0,
+      "name": "Keyword Album - Success",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "#F5F7FA",
+      "layout": "vertical",
+      "gap": 12,
+      "padding": 16,
+      "children": [
+        {
+          "type": "frame",
+          "id": "fualP",
+          "name": "Navigation Bar",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "#FFFFFF",
+          "cornerRadius": 12,
+          "gap": 8,
+          "padding": 12,
+          "children": [
+            {
+              "type": "text",
+              "id": "hM1R9",
+              "name": "Back",
+              "fill": "#111827",
+              "content": "<",
+              "fontFamily": "Inter",
+              "fontSize": 18,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "EL6XN",
+              "name": "Title",
+              "fill": "#111827",
+              "content": "앨범 생성 완료",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "2MKAP",
+              "name": "Spacer",
+              "width": "fill_container",
+              "height": 1
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "YAWZt",
+          "name": "Success Content",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 12,
+          "children": [
+            {
+              "type": "frame",
+              "id": "i678i",
+              "name": "Top Space",
+              "width": "fill_container",
+              "height": 80
+            },
+            {
+              "type": "frame",
+              "id": "UMYk0",
+              "name": "Success Icon",
+              "width": 72,
+              "height": 72,
+              "fill": "#10B981",
+              "cornerRadius": 36
+            },
+            {
+              "type": "text",
+              "id": "sErjH",
+              "name": "Success Headline",
+              "fill": "#111827",
+              "content": "키워드 앨범이 생성되었습니다",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "fCc6h",
+              "name": "Success Description",
+              "fill": "#6B7280",
+              "content": "'고양이 모음' 앨범에 12장의 사진이 담겼습니다.",
+              "fontFamily": "Inter",
+              "fontSize": 14
+            },
+            {
+              "type": "frame",
+              "id": "PMrva",
+              "name": "Created Album Card",
+              "width": "fill_container",
+              "fill": "#FFFFFF",
+              "cornerRadius": 12,
+              "layout": "vertical",
+              "gap": 6,
+              "padding": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "0kC4K",
+                  "name": "Album Title",
+                  "fill": "#111827",
+                  "content": "고양이 모음",
+                  "fontFamily": "Inter",
+                  "fontSize": 16,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "3x8YP",
+                  "name": "Album Subtitle",
+                  "fill": "#374151",
+                  "content": "키워드: 고양이",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "eh7QO",
+                  "name": "Album Meta",
+                  "fill": "#6B7280",
+                  "content": "생성 시각: 방금",
+                  "fontFamily": "Inter",
+                  "fontSize": 12
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "MQV3W",
+              "name": "Open Photos Button",
+              "width": "fill_container",
+              "height": 44,
+              "fill": "#2563EB",
+              "cornerRadius": 10,
+              "padding": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "kZwD4",
+                  "name": "Open Photos Button Text",
+                  "fill": "#FFFFFF",
+                  "content": "앨범 보기",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "b0Yix",
+              "name": "Done Button",
+              "width": "fill_container",
+              "height": 44,
+              "fill": "#E5E7EB",
+              "cornerRadius": 10,
+              "padding": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "cHPnb",
+                  "name": "Done Button Text",
+                  "fill": "#111827",
+                  "content": "닫기",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "x79Sd",
+              "name": "Success Hint",
+              "fill": "#6B7280",
+              "content": "필요하면 같은 키워드로 기존 앨범에 추가할 수 있습니다.",
+              "fontFamily": "Inter",
+              "fontSize": 12
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "dKjYG",
+      "x": 3440,
+      "y": 0,
+      "name": "Settings - Keyword Analysis",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "#F5F7FA",
+      "layout": "vertical",
+      "gap": 12,
+      "padding": 16,
+      "children": [
+        {
+          "type": "frame",
+          "id": "SfP8p",
+          "name": "Navigation Bar",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "#FFFFFF",
+          "cornerRadius": 12,
+          "gap": 8,
+          "padding": 12,
+          "children": [
+            {
+              "type": "text",
+              "id": "zxynl",
+              "name": "Back",
+              "fill": "#111827",
+              "content": "<",
+              "fontFamily": "Inter",
+              "fontSize": 18,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "uwUlI",
+              "name": "Title",
+              "fill": "#111827",
+              "content": "설정",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "CVYxA",
+              "name": "Spacer",
+              "width": "fill_container",
+              "height": 1
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "tv3R8",
+          "name": "Scan Settings Card",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 12,
+          "layout": "vertical",
+          "gap": 10,
+          "padding": 12,
+          "children": [
+            {
+              "type": "text",
+              "id": "LeCdK",
+              "name": "Section Header",
+              "fill": "#111827",
+              "content": "검사 설정",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "PE5CI",
+              "name": "Large File Row",
+              "width": "fill_container",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "9oSln",
+                  "name": "Large File Label",
+                  "fill": "#374151",
+                  "content": "대용량 기준",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "NeaXZ",
+                  "name": "Large File Spacer",
+                  "width": "fill_container",
+                  "height": 1
+                },
+                {
+                  "type": "text",
+                  "id": "33KnW",
+                  "name": "Large File Value",
+                  "fill": "#6B7280",
+                  "content": "10 MB",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "n8sjl",
+              "name": "Duplicate Mode Row",
+              "width": "fill_container",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "iYWei",
+                  "name": "Duplicate Mode Label",
+                  "fill": "#374151",
+                  "content": "중복 감지 모드",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "64Ufh",
+                  "name": "Duplicate Mode Spacer",
+                  "width": "fill_container",
+                  "height": 1
+                },
+                {
+                  "type": "text",
+                  "id": "29kCl",
+                  "name": "Duplicate Mode Value",
+                  "fill": "#6B7280",
+                  "content": "정확 일치",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "c6R5o",
+              "name": "Keyword Toggle Row",
+              "width": "fill_container",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "hDsjK",
+                  "name": "Keyword Toggle Label",
+                  "fill": "#374151",
+                  "content": "키워드 분석",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "fx7O1",
+                  "name": "Keyword Toggle Spacer",
+                  "width": "fill_container",
+                  "height": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "pNny1",
+                  "name": "Keyword Toggle Track",
+                  "width": 40,
+                  "height": 22,
+                  "fill": "#60A5FA",
+                  "cornerRadius": 11,
+                  "padding": 2,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Lh0gk",
+                      "name": "Keyword Toggle Knob",
+                      "width": 18,
+                      "height": 18,
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 9
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "owLhT",
+              "name": "Confidence Label",
+              "fill": "#6B7280",
+              "content": "키워드 신뢰도 임계값: 80%",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "500"
+            },
+            {
+              "type": "frame",
+              "id": "vQZs9",
+              "name": "Confidence Slider Track",
+              "width": "fill_container",
+              "height": 6,
+              "fill": "#E5E7EB",
+              "cornerRadius": 4
+            },
+            {
+              "type": "frame",
+              "id": "Ak36X",
+              "name": "Confidence Slider Fill",
+              "width": 250,
+              "height": 6,
+              "fill": "#2563EB",
+              "cornerRadius": 4
+            },
+            {
+              "type": "frame",
+              "id": "Q5eCQ",
+              "name": "Auto Scan Toggle Row",
+              "width": "fill_container",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pe3Q1",
+                  "name": "Auto Scan Label",
+                  "fill": "#374151",
+                  "content": "자동 검사",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "9cs9g",
+                  "name": "Auto Scan Spacer",
+                  "width": "fill_container",
+                  "height": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "Tkroh",
+                  "name": "Auto Scan Toggle",
+                  "width": 40,
+                  "height": 22,
+                  "fill": "#D1D5DB",
+                  "cornerRadius": 11
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "r0Zie",
+          "name": "Scan Settings Footer",
+          "fill": "#6B7280",
+          "content": "자동 검사를 켜면 앱 실행 시 자동으로 검사를 시작합니다.",
+          "fontFamily": "Inter",
+          "fontSize": 12
         }
       ]
     }
