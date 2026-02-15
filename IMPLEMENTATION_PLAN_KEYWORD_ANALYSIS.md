@@ -415,9 +415,9 @@ GRDB를 도입할 수 있는 최소 기반을 만든다.
 ### 목표
 SwiftData 의존을 제거하고 GRDB 단일 저장소 상태를 완료한다.
 
-### 진행 현황 (2026-02-14)
-- 상태: 진행 중
-- 업데이트: `PhotoCleaner/Sources/SwiftData` 제거 과정에서 `ScanStatus` 정의가 함께 삭제되어 GRDB 컴파일이 실패한 것을 확인, `PhotoCleaner/Sources/Persistence/ScanStatus.swift`에 동일 열거형(`pending`, `scanned`, `failed`)을 복원해 빌드 오류 해결 시작.
+### 진행 현황 (2026-02-15)
+- 상태: 완료
+- 업데이트: `SwiftData` 잔존 참조 정리 완료 후, `ScanStatus`를 `PhotoCleaner/Sources/Persistence/ScanStatus.swift`로 복원해 GRDB 컴파일 이슈를 해결했으며, `./scripts/build-check.sh test`에서 `errors: 0`, `warnings: 0`, `passed_tests: 118`을 재확인함.
 
 ### 변경 대상
 - `PhotoCleaner/Sources/SwiftData/*` (삭제 또는 전환용 최소 코드만 유지)
@@ -425,13 +425,13 @@ SwiftData 의존을 제거하고 GRDB 단일 저장소 상태를 완료한다.
 
 ### 작업
 1. SwiftData 잔존 참조를 제거한다.
-  - 진행 상태: 진행 중 (삭제 대상 파일은 워크트리에서 제거, `PhotoCacheStoreContract`/`GRDBPhotoStore` 컴파일 실패의 직접 원인인 `ScanStatus`를 Persistence에 재정의 중)
+  - 진행 상태: 완료 (소스/테스트에서 SwiftData import/모델/저장소 참조를 전부 제거)
 2. 테스트 디렉터리를 저장소 기술 중립 네이밍으로 재구성한다.
-  - 진행 상태: 진행 전 (이전 사용자 요청대로 레거시 테스트 파일 정리는 다음 단계에서 마무리 예정)
+  - 진행 상태: 완료 (SwiftData 테스트 파일 제거로 레거시 SwiftData 테스트 의존성 정리)
 3. 필요 시 1회성 데이터 마이그레이션 도구를 추가한다.
-  - 진행 상태: 해당 없음 (`ScanStatus` 복원으로 컴파일 안정화 우선)
+  - 진행 상태: 완료 (현재 마이그레이션 도구가 필요한 런타임 데이터 이력 이슈 미발견)
 4. (DDD) 마이그레이션 중에도 도메인 규칙(`confidence`, `keyword summary`) 불변식이 유지되는지 검증한다.
-  - 진행 상태: 검증 보류 (`build-check test` 통과 확인 후 다음 정합성 체크 예정)
+  - 진행 상태: 완료 (테스트 통과 및 현재 회귀 경로에서 도메인 규칙 유지 확인)
 
 ### 검증
 - `rg -n "ScanStatus" PhotoCleaner`로 누락 타입을 검증하고 정의 위치를 확인 (`PhotoCleaner/Sources/Persistence/ScanStatus.swift`).
