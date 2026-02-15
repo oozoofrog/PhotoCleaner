@@ -1,0 +1,277 @@
+{
+  "version": "2.8",
+  "children": [
+    {
+      "type": "frame",
+      "id": "bi8Au",
+      "x": 0,
+      "y": 0,
+      "name": "Main Dashboard",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "#F5F7FA",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 16,
+      "children": [
+        {
+          "type": "frame",
+          "id": "FNnRb",
+          "name": "Navigation Bar",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "#FFFFFF",
+          "cornerRadius": 12,
+          "padding": 12,
+          "children": [
+            {
+              "type": "text",
+              "id": "rIhxa",
+              "name": "navTitleA",
+              "fill": "#111827",
+              "content": "PhotoCleaner",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "600"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "XHXoV",
+          "name": "Summary Card",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 12,
+          "layout": "vertical",
+          "gap": 8,
+          "padding": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "5Ft8S",
+              "name": "summaryTitleA",
+              "fill": "#111827",
+              "content": "Summary",
+              "fontFamily": "Inter",
+              "fontSize": 16,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "HtDRK",
+              "name": "summaryStatsA",
+              "fill": "#374151",
+              "content": "totalPhotos: 0 | totalIssues: 0 | lastScanDate: -",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "8Uzh5",
+          "name": "Keyword Summary Card",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 12,
+          "layout": "vertical",
+          "gap": 10,
+          "padding": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "FsKIi",
+              "name": "keywordTitleA",
+              "fill": "#111827",
+              "content": "Keyword Summary",
+              "fontFamily": "Inter",
+              "fontSize": 16,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "hDgh4",
+              "name": "keywordChipsA",
+              "fill": "#374151",
+              "content": "#cat (12)   #dog (9)   #beach (7)",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "j6VOX",
+          "name": "Issue Section",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 10,
+          "children": [
+            {
+              "type": "text",
+              "id": "Wrzyi",
+              "name": "issueTitleA",
+              "fill": "#111827",
+              "content": "문제 유형",
+              "fontFamily": "Inter",
+              "fontSize": 16,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "liISb",
+              "name": "issueRow1A",
+              "width": "fill_container",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "XEWXh",
+                  "name": "issueCard1A",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 12,
+                  "layout": "vertical",
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "jJbhv",
+                      "name": "issueCard1LabelA",
+                      "fill": "#374151",
+                      "content": "downloadFailed",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Rz3cr",
+                  "name": "issueCard2A",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 12,
+                  "layout": "vertical",
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Zv6Dn",
+                      "name": "issueCard2LabelA",
+                      "fill": "#374151",
+                      "content": "corrupted",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "wjKVp",
+              "name": "issueRow2A",
+              "width": "fill_container",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "YfKE6",
+                  "name": "issueCard3A",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 12,
+                  "layout": "vertical",
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "f4UUD",
+                      "name": "issueCard3LabelA",
+                      "fill": "#374151",
+                      "content": "screenshot",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "yZvcV",
+                  "name": "issueCard4A",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 12,
+                  "layout": "vertical",
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "xMZJb",
+                      "name": "issueCard4LabelA",
+                      "fill": "#374151",
+                      "content": "largeFile",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "rJQnV",
+          "name": "Duplicate Section",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 8,
+          "children": [
+            {
+              "type": "text",
+              "id": "TSFwz",
+              "name": "dupTitleA",
+              "fill": "#111827",
+              "content": "중복 사진",
+              "fontFamily": "Inter",
+              "fontSize": 16,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "DcJxK",
+              "name": "dupCardA",
+              "width": "fill_container",
+              "fill": "#FFFFFF",
+              "cornerRadius": 12,
+              "layout": "vertical",
+              "padding": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "R7DQz",
+                  "name": "dupTextA",
+                  "fill": "#374151",
+                  "content": "groupCount / duplicateCount / savings",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
